@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+{% set active = "rfid" %}
+{% block title %}RFID — CPO Admin{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-4">
+    <h1 class="text-2xl font-bold">RFID Cards <span class="text-gray-500 text-lg" id="token-count">({{ tokens | length }})</span></h1>
+    <div class="flex gap-2">
+        <button onclick="setFilter('all')" id="btn-all" class="px-3 py-1.5 rounded text-xs font-semibold bg-brand-blue text-white">All</button>
+        <button onclick="setFilter('Accepted')" id="btn-Accepted" class="px-3 py-1.5 rounded text-xs font-semibold bg-gray-800 text-gray-400 border border-gray-700 hover:bg-gray-700">Accepted</button>
+        <button onclick="setFilter('Blocked')" id="btn-Blocked" class="px-3 py-1.5 rounded text-xs font-semibold bg-gray-800 text-gray-400 border border-gray-700 hover:bg-gray-700">Blocked</button>
+        <button onclick="openModal('modal-create')" class="px-3 py-1.5 rounded text-xs font-semibold bg-green-700 text-white hover:bg-green-600">+ Add Token</button>
+        <button onclick="confirmPurgeStress()" class="px-3 py-1.5 rounded text-xs font-semibold border border-red-700 text-red-400 hover:bg-red-900/30">🗑️ Remove Test Tokens</button>
+    </div>
+</div>
+
+<!-- Search -->
+<div class="mb-4">
+    <input type="text" id="token-search" placeholder="Search by token, name, group..."
+           class="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-sm text-gray-200 placeholder-gray-500 focus:border-brand-blue focus:outline-none"
+           oninput="applyFilters()">
+</div>
+
+<!-- Feedback -->
+<div id="rfid-feedback" class="mb-2"></div>
+
+<!-- Table -->
+<div class="bg-gray-900 rounded-lg border border-gray-800">
+    <table class="w-full text-sm">
+        <thead>
+            <tr class="border-b border-gray-800 text-gray-400">
+                <th class="text-left p-3">Token</th>
+                <th class="text-left p-3">Type</th>
+                <th class="text-left p-3">Status</th>
+                <th class="text-left p-3">Name</th>
+                <th class="text-left p-3">Group</th>
+                <th class="text-left p-3">Registered</th>
+                <th class="text-right p-3">Actions</th>
+            </tr>
+        </thead>
+        <tbody id="token-body">
+            {% for t in tokens %}
+            <tr class="border-b border-gray-800 hover:bg-gray-800/50" data-status="{{ t.status }}" data-token="{{ t.token }}">
+                <td class="p-3 font-mono font-bold text-brand-blue">{{ t.token }}</td>
+                <td class="p-3">
+                    {% if t.type == 'rfid' %}<span class="px-2 py-0.5 bg-blue-900 text-blue-300 rounded text-xs">RFID</span>
+                    {% elif t.type == 'pnc' %}<span class="px-2 py-0.5 bg-purple-900 text-purple-300 rounded text-xs">P&C</span>
+                    {% else %}<span class="px-2 py-0.5 bg-gray-800 text-gray-400 rounded text-xs">{{ t.type }}</span>{% endif %}
+                </td>
+                <td class="p-3">
+                    {% if t.status == 'Accepted' %}<span class="px-2 py-0.5 bg-green-900 text-green-300 rounded text-xs">Accepted</span>
+                    {% elif t.status == 'Blocked' %}<span class="px-2 py-0.5 bg-red-900 text-red-300 rounded text-xs">Blocked</span>
+                    {% else %}<span class="px-2 py-0.5 bg-yellow-900 text-yellow-300 rounded text-xs">{{ t.status }}</span>{% endif %}
+                </td>
+                <td class="p-3">{{ t.display_name or '—' }}</td>
+                <td class="p-3 text-gray-400">{{ t.group_id or '—' }}</td>
+                <td class="p-3 text-xs text-gray-400">{{ t.created_at }}</td>
+                <td class="p-3 text-right space-x-1">
+                    {% if t.status == 'Accepted' %}
+                    <button hx-post="/action/token/block/{{ t.token }}" hx-target="#rfid-feedback" hx-swap="innerHTML"
+                            class="px-2 py-1 bg-red-700 rounded text-xs hover:bg-red-600" title="Block">🚫</button>
+                    {% else %}
+                    <button hx-post="/action/token/accept/{{ t.token }}" hx-target="#rfid-feedback" hx-swap="innerHTML"
+                            class="px-2 py-1 bg-green-700 rounded text-xs hover:bg-green-600" title="Accept">✅</button>
+                    {% endif %}
+                    <button onclick="openEditModal('{{ t.token }}', '{{ t.display_name or '' }}', '{{ t.group_id or '' }}')"
+                            class="px-2 py-1 bg-gray-700 rounded text-xs hover:bg-gray-600" title="Edit">✏️</button>
+                    <button onclick="confirmDelete('{{ t.token }}')"
+                            class="px-2 py-1 bg-red-900 rounded text-xs hover:bg-red-800" title="Delete">🗑</button>
+                </td>
+            </tr>
+            {% endfor %}
+            {% if not tokens %}
+            <tr><td colspan="7" class="p-6 text-center text-gray-500">No tokens registered</td></tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Create Modal -->
+<div id="modal-create" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50" onclick="if(event.target===this)closeModal('modal-create')">
+    <div class="bg-gray-900 border border-gray-700 rounded-lg p-6 w-full max-w-md">
+        <h2 class="text-lg font-bold mb-4">Add Token</h2>
+        <form hx-post="/action/token/create" hx-target="#rfid-feedback" hx-swap="innerHTML" class="space-y-3">
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">Token / RFID UID</label>
+                <input name="token" type="text" required placeholder="e.g. 04:A2:B3:C4:D5:E6"
+                       class="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-sm focus:border-brand-blue focus:outline-none">
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Type</label>
+                    <select name="type" class="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-sm">
+                        <option value="rfid">RFID</option>
+                        <option value="pnc">Plug & Charge</option>
+                        <option value="app">App</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Status</label>
+                    <select name="status" class="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-sm">
+                        <option value="Accepted">Accepted</option>
+                        <option value="Blocked">Blocked</option>
+                    </select>
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">Display Name</label>
+                <input name="display_name" type="text" placeholder="e.g. Jacco Patist"
+                       class="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-sm focus:border-brand-blue focus:outline-none">
+            </div>
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">Group</label>
+                <input name="group_id" type="text" placeholder="e.g. lichtwerk-team"
+                       class="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-sm focus:border-brand-blue focus:outline-none">
+            </div>
+            <div class="flex gap-2 pt-2">
+                <button type="submit" class="flex-1 py-2 bg-green-700 rounded text-sm font-semibold hover:bg-green-600">Create</button>
+                <button type="button" onclick="closeModal('modal-create')" class="flex-1 py-2 bg-gray-700 rounded text-sm hover:bg-gray-600">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div id="modal-edit" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50" onclick="if(event.target===this)closeModal('modal-edit')">
+    <div class="bg-gray-900 border border-gray-700 rounded-lg p-6 w-full max-w-md">
+        <h2 class="text-lg font-bold mb-4">Edit Token <span id="edit-token-id" class="font-mono text-brand-blue text-sm"></span></h2>
+        <form id="edit-form" hx-target="#rfid-feedback" hx-swap="innerHTML" class="space-y-3">
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">Display Name</label>
+                <input id="edit-name" name="display_name" type="text"
+                       class="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-sm focus:border-brand-blue focus:outline-none">
+            </div>
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">Group</label>
+                <input id="edit-group" name="group_id" type="text"
+                       class="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-sm focus:border-brand-blue focus:outline-none">
+            </div>
+            <div class="flex gap-2 pt-2">
+                <button type="submit" class="flex-1 py-2 bg-brand-blue rounded text-sm font-semibold hover:opacity-90">Save</button>
+                <button type="button" onclick="closeModal('modal-edit')" class="flex-1 py-2 bg-gray-700 rounded text-sm hover:bg-gray-600">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div id="modal-delete" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50" onclick="if(event.target===this)closeModal('modal-delete')">
+    <div class="bg-gray-900 border border-red-800 rounded-lg p-6 w-full max-w-sm text-center">
+        <div class="text-3xl mb-3">⚠️</div>
+        <h2 class="text-lg font-bold mb-2">Delete Token?</h2>
+        <p class="text-sm text-gray-400 mb-4">This will permanently remove <span id="delete-token-id" class="font-mono text-brand-blue"></span> from the authorization cache.</p>
+        <div class="flex gap-2">
+            <button id="delete-confirm-btn" class="flex-1 py-2 bg-red-700 rounded text-sm font-semibold hover:bg-red-600">Delete</button>
+            <button onclick="closeModal('modal-delete')" class="flex-1 py-2 bg-gray-700 rounded text-sm hover:bg-gray-600">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- Purge Test Tokens Modal -->
+<div id="modal-purge" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50" onclick="if(event.target===this)closeModal('modal-purge')">
+    <div class="bg-gray-900 border border-red-800 rounded-lg p-6 w-full max-w-sm text-center">
+        <div class="text-3xl mb-3">🗑️</div>
+        <h2 class="text-lg font-bold mb-2">Remove Test Tokens?</h2>
+        <p class="text-sm text-gray-400 mb-4">This removes all tokens starting with STRESS-, SIM-, VAL-, CHAOS-. Real tokens are not affected.</p>
+        <div id="purge-feedback" class="mb-3"></div>
+        <div class="flex gap-2">
+            <button hx-post="/action/token/purge-test" hx-target="#purge-feedback" hx-swap="innerHTML"
+                    class="flex-1 py-2 bg-red-700 rounded text-sm font-semibold hover:bg-red-600">Yes, Remove All</button>
+            <button onclick="closeModal('modal-purge')" class="flex-1 py-2 bg-gray-700 rounded text-sm hover:bg-gray-600">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<script>
+let _filter = 'all';
+
+function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+function setFilter(f) {
+    _filter = f;
+    ['all','Accepted','Blocked'].forEach(s => {
+        const b = document.getElementById('btn-' + s);
+        if (b) b.className = 'px-3 py-1.5 rounded text-xs font-semibold ' +
+            (s === f ? 'bg-brand-blue text-white' : 'bg-gray-800 text-gray-400 border border-gray-700 hover:bg-gray-700');
+    });
+    applyFilters();
+}
+
+function applyFilters() {
+    const q = (document.getElementById('token-search').value || '').toLowerCase();
+    let visible = 0;
+    document.querySelectorAll('#token-body tr[data-token]').forEach(row => {
+        const text = row.textContent.toLowerCase();
+        const status = row.dataset.status || '';
+        let show = true;
+        if (_filter !== 'all' && status !== _filter) show = false;
+        if (q && !text.includes(q)) show = false;
+        row.style.display = show ? '' : 'none';
+        if (show) visible++;
+    });
+    document.getElementById('token-count').textContent = '(' + visible + ')';
+}
+
+function openEditModal(token, name, group) {
+    document.getElementById('edit-token-id').textContent = token;
+    document.getElementById('edit-name').value = name;
+    document.getElementById('edit-group').value = group;
+    document.getElementById('edit-form').setAttribute('hx-post', '/action/token/update/' + encodeURIComponent(token));
+    htmx.process(document.getElementById('edit-form'));
+    openModal('modal-edit');
+}
+
+function confirmDelete(token) {
+    document.getElementById('delete-token-id').textContent = token;
+    const btn = document.getElementById('delete-confirm-btn');
+    btn.setAttribute('hx-post', '/action/token/delete/' + encodeURIComponent(token));
+    btn.setAttribute('hx-target', '#rfid-feedback');
+    btn.setAttribute('hx-swap', 'innerHTML');
+    htmx.process(btn);
+    openModal('modal-delete');
+}
+
+function confirmPurgeStress() { openModal('modal-purge'); }
+
+document.addEventListener('htmx:afterSwap', (e) => {
+    if (e.detail.target.id === 'rfid-feedback' || e.detail.target.id === 'purge-feedback') {
+        setTimeout(() => location.reload(), 1500);
+    }
+});
+</script>
+{% endblock %}

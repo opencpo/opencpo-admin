@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <title>⚡ {% block title %}Admin{% endblock %} — {{ app_title }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/static/htmx.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { dark: '#0C2340', green: '#84BD00', blue: '#00B0E4' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .htmx-indicator { display: none; }
+        .htmx-request .htmx-indicator { display: inline-block; }
+        .htmx-request.htmx-indicator { display: inline-block; }
+        @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        .status-online { color: #84BD00; animation: pulse-dot 2s infinite; }
+        .status-offline { color: #ef4444; }
+    </style>
+</head>
+<body class="h-full bg-gray-950 text-gray-100">
+<!-- Top Nav -->
+<nav style="display:flex;align-items:center;gap:4px;padding:6px 16px;background:#0a1628;border-bottom:1px solid #1e3a5f;font-size:12px;position:sticky;top:0;z-index:9999;overflow-x:auto;white-space:nowrap;">
+  <span style="color:#00B0E4;font-weight:700;font-size:13px;margin-right:12px;">⚡ {{ app_title }}</span>
+  <a href="/" style="color:#00B0E4;text-decoration:none;padding:4px 10px;border-radius:6px;background:#00B0E422;">🔧 Admin</a>
+</nav>
+
+    <div class="flex h-full">
+        <!-- Sidebar -->
+        <nav class="w-56 bg-brand-dark flex flex-col border-r border-gray-800">
+            <div class="p-4 border-b border-gray-700">
+                <img src="/static/logo.png" alt="" style="height:28px;filter:drop-shadow(0 0 6px rgba(0,176,228,0.3));">
+                <span class="text-lg font-semibold ml-1">CPO Admin</span>
+            </div>
+            <div class="flex-1 py-4">
+                <a href="/" class="nav-link block px-4 py-2 hover:bg-gray-800 {% if active == 'dashboard' %}bg-gray-800 text-brand-green{% endif %}">
+                    📊 Dashboard
+                </a>
+                <a href="/chargers" class="nav-link block px-4 py-2 hover:bg-gray-800 {% if active == 'chargers' %}bg-gray-800 text-brand-green{% endif %}">
+                    🔌 Chargers
+                </a>
+                <a href="/sessions" class="nav-link block px-4 py-2 hover:bg-gray-800 {% if active == 'sessions' %}bg-gray-800 text-brand-green{% endif %}">
+                    ⚡ Sessions
+                </a>
+                <a href="/tariffs" class="nav-link block px-4 py-2 hover:bg-gray-800 {% if active == 'tariffs' %}bg-gray-800 text-brand-green{% endif %}">
+                    💰 Tariffs
+                </a>
+                <a href="/tokens" class="nav-link block px-4 py-2 hover:bg-gray-800 {% if active == 'tokens' %}bg-gray-800 text-brand-green{% endif %}">
+                    🏷️ Tokens
+                </a>
+                <a href="/groups" class="nav-link block px-4 py-2 hover:bg-gray-800 {% if active == 'groups' %}bg-gray-800 text-brand-green{% endif %}">
+                    👥 Groups
+                </a>
+                <a href="/invoices" class="nav-link block px-4 py-2 hover:bg-gray-800 {% if active == 'invoices' %}bg-gray-800 text-brand-green{% endif %}">
+                    🧾 Invoices
+                </a>
+                <a href="/pki" class="nav-link block px-4 py-2 hover:bg-gray-800 {% if active == 'pki' %}bg-gray-800 text-brand-green{% endif %}">
+                    🔐 PKI
+                </a>
+                <a href="/ocpp" class="nav-link block px-4 py-2 hover:bg-gray-800 {% if active == 'ocpp' %}bg-gray-800 text-brand-green{% endif %}">
+                    📡 OCPP Messages
+                </a>
+                <a href="/security" class="nav-link block px-4 py-2 hover:bg-gray-800 {% if active == 'security' %}bg-gray-800 text-brand-green{% endif %}">
+                    🛡️ Security
+                </a>
+                <a href="/features" class="nav-link block px-4 py-2 hover:bg-gray-800 {% if active == 'features' %}bg-gray-800 text-brand-green{% endif %}">
+                    🎛️ Features
+                </a>
+                <div class="mt-2 mb-1 px-4 text-[9px] uppercase tracking-widest text-gray-600">Tools</div>
+                <a href="/onboarding" class="nav-link block px-4 py-2 hover:bg-gray-800">
+                    🚀 Onboarding
+                </a>
+
+            </div>
+            <div class="p-4 border-t border-gray-700 text-xs text-gray-500">
+                OCPP Core v1.0
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-auto">
+            <div class="p-6">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+</body>
+</html>

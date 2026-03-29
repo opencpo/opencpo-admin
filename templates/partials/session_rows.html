@@ -1,0 +1,22 @@
+{% for s in sessions %}
+<tr class="border-b border-gray-800 hover:bg-gray-800/50"
+    data-status="{{ s.status }}" data-charger="{{ s.charge_point }}" data-auth="{{ s.auth_method or '' }}">
+    <td class="p-3 font-mono">{{ s.charge_point }}</td>
+    <td class="p-3">{{ s.connector_id }}</td>
+    <td class="p-3">
+        {% if s.status == 'active' %}
+            <span class="px-2 py-0.5 bg-green-900 text-green-300 rounded text-xs">Active</span>
+        {% elif s.status == 'completed' %}
+            <span class="px-2 py-0.5 bg-blue-900 text-blue-300 rounded text-xs">Done</span>
+        {% else %}
+            <span class="px-2 py-0.5 bg-red-900 text-red-300 rounded text-xs">{{ s.status }}</span>
+        {% endif %}
+    </td>
+    <td class="p-3 text-xs">{{ s.auth_method or '—' }} {{ s.auth_id or '' }}</td>
+    <td class="p-3 text-xs text-gray-400">{{ s.start_time }}</td>
+    <td class="p-3 text-xs text-gray-400">{{ s.stop_time or '—' }}</td>
+    <td class="p-3 text-right font-mono">{{ "%.2f"|format(s.energy_kwh or 0) }}</td>
+    <td class="p-3 text-right font-mono">{{ "%.1f"|format(s.peak_power_kw or 0) }}</td>
+    <td class="p-3 text-xs text-gray-400">{{ s.stop_reason or '—' }}</td>
+</tr>
+{% endfor %}

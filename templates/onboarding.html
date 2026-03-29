@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>⚡ Onboarding — {{ app_title }}</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: '#00B0E4',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .tab-btn.active { background: #00B0E4; color: #fff; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+    .copy-btn:active { transform: scale(0.95); }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-in { animation: fadeIn 0.3s ease forwards; }
+    /* Spinner */
+    .spinner { border: 2px solid #374151; border-top-color: #00B0E4; border-radius: 50%; width: 18px; height: 18px; animation: spin 0.7s linear infinite; display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    /* OS selector */
+    .os-btn { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 14px; border-radius: 12px; border: 2px solid transparent; background: #1f2937; cursor: pointer; transition: all 0.15s; font-size: 11px; color: #9ca3af; min-width: 64px; }
+    .os-btn:hover { border-color: #374151; background: #273040; color: #d1d5db; }
+    .os-btn.selected { border-color: #00B0E4; background: #0c2233; color: #fff; }
+    .os-btn .os-icon { font-size: 22px; line-height: 1; }
+    .os-btn .os-label { font-weight: 600; font-size: 11px; }
+    .os-btn .os-ver { font-size: 9px; color: #6b7280; margin-top: -2px; }
+    .os-btn.selected .os-ver { color: #60a5fa; }
+  </style>
+</head>
+<body class="bg-gray-950 text-white min-h-screen">
+
+  <!-- Top bar -->
+  <div class="border-b border-gray-800 bg-gray-900/60 backdrop-blur sticky top-0 z-10">
+    <div class="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
+      <img src="/static/logo.svg" alt="{{ app_title }}" class="h-7 w-7" onerror="this.style.display='none'" />
+      <span class="font-bold text-lg tracking-tight">{{ app_title }}</span>
+      <span class="text-gray-500 text-sm ml-auto">Onboarding</span>
+    </div>
+  </div>
+
+  <div class="max-w-2xl mx-auto px-4 py-10 space-y-8">
+
+    <!-- ── Section 1: Welcome ────────────────────────────────────────── -->
+    <div class="space-y-2">
+      <h1 class="text-3xl font-bold tracking-tight">Welcome to {{ app_title }} ⚡</h1>
+      <p class="text-gray-400 text-lg leading-relaxed">
+        You are connected via Tailscale. Follow these steps to access all tools.
+      </p>
+      <div class="flex gap-1.5 pt-1">
+        <a href="#stap-1" class="text-xs px-3 py-1.5 rounded-full bg-gray-800 text-gray-300 hover:bg-gray-700 transition-colors">Step 1 · Root CA</a>
+        <a href="#stap-2" class="text-xs px-3 py-1.5 rounded-full bg-gray-800 text-gray-300 hover:bg-gray-700 transition-colors">Step 2 · Your Cert</a>
+        <a href="#stap-3" class="text-xs px-3 py-1.5 rounded-full bg-gray-800 text-gray-300 hover:bg-gray-700 transition-colors">Step 3 · DNS Check</a>
+        <a href="#tools" class="text-xs px-3 py-1.5 rounded-full bg-gray-800 text-gray-300 hover:bg-gray-700 transition-colors">Tools</a>
+      </div>
+    </div>
+
+    <!-- ── Section 2: Root CA ────────────────────────────────────────── -->
+    <section id="stap-1" class="bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-5">
+      <div class="flex items-center gap-3">
+        <span class="flex items-center justify-center w-8 h-8 rounded-full bg-brand/20 text-brand font-bold text-sm">1</span>
+        <h2 class="text-xl font-semibold">Install Root CA Certificate</h2>
+      </div>
+
+      <p class="text-gray-400 text-sm leading-relaxed">
+        All {{ app_title }} tools use <strong class="text-gray-200">HTTPS with a custom Root CA</strong>. 
+        Without this certificate your browser will show a security warning. 
+        After installation your device will automatically trust all internal domains.
+      </p>
+
+      <a id="ca-download-btn" href="/onboarding/ca.crt"
+         class="inline-flex items-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm transition-all
+                bg-brand hover:bg-sky-400 text-white shadow-lg shadow-brand/25 active:scale-95">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+        </svg>
+        <span id="ca-download-label">Download Root CA</span>
+      </a>
+
+      <!-- OS Tabs -->
+      <div>
+        <div class="flex gap-1 mb-4">
+          <button class="tab-btn active text-xs px-4 py-2 rounded-lg font-medium transition-colors bg-gray-800 hover:bg-gray-700"
+                  onclick="switchTab('os', 'macos', this)">🍎 macOS</button>
+          <button class="tab-btn text-xs px-4 py-2 rounded-lg font-medium transition-colors bg-gray-800 hover:bg-gray-700"
+                  onclick="switchTab('os', 'windows', this)">🪟 Windows</button>
+          <button class="tab-btn text-xs px-4 py-2 rounded-lg font-medium transition-colors bg-gray-800 hover:bg-gray-700"
+                  onclick="switchTab('os', 'linux', this)">🐧 Linux</button>
+        </div>
+
+        <div id="os-macos" class="tab-panel active space-y-2 text-sm text-gray-300">
+          <ol class="space-y-1.5 list-none">
+            <li class="flex gap-2"><span class="text-brand font-bold">1.</span> Double-click the downloaded <code class="bg-gray-800 px-1.5 py-0.5 rounded text-xs">root-ca.crt</code> file</li>
+            <li class="flex gap-2"><span class="text-brand font-bold">2.</span> Keychain Access opens — choose the <strong class="text-white">System</strong> keychain (not Login)</li>
+            <li class="flex gap-2"><span class="text-brand font-bold">3.</span> Double-click the certificate → open <em>Trust</em></li>
+            <li class="flex gap-2"><span class="text-brand font-bold">4.</span> Set <em>When using this certificate:</em> to <strong class="text-white">Always Trust</strong></li>
+            <li class="flex gap-2"><span class="text-brand font-bold">5.</span> Close the window — enter your macOS password if prompted</li>
+          </ol>
+          <p class="text-gray-500 text-xs pt-1">Restart Safari/Chrome after installation.</p>
+        </div>
+
+        <div id="os-windows" class="tab-panel space-y-2 text-sm text-gray-300">
+          <ol class="space-y-1.5 list-none">
+            <li class="flex gap-2"><span class="text-brand font-bold">1.</span> Double-click <code class="bg-gray-800 px-1.5 py-0.5 rounded text-xs">root-ca.crt</code></li>
+            <li class="flex gap-2"><span class="text-brand font-bold">2.</span> Click <strong class="text-white">Install Certificate</strong></li>
+            <li class="flex gap-2"><span class="text-brand font-bold">3.</span> Choose <strong class="text-white">Local Machine</strong> → Next</li>
+            <li class="flex gap-2"><span class="text-brand font-bold">4.</span> Select <strong class="text-white">Place all certificates in the following store</strong></li>
+            <li class="flex gap-2"><span class="text-brand font-bold">5.</span> Click Browse → choose <strong class="text-white">Trusted Root Certification Authorities</strong></li>
+            <li class="flex gap-2"><span class="text-brand font-bold">6.</span> Click Finish and confirm the security warning</li>
+          </ol>
+          <p class="text-gray-500 text-xs pt-1">Restart Edge/Chrome after installation.</p>
+        </div>
+
+        <div id="os-linux" class="tab-panel space-y-2 text-sm text-gray-300">
+          <p class="text-gray-400 text-xs mb-2">Debian/Ubuntu/Mint:</p>
+          <div class="bg-gray-950 border border-gray-700 rounded-lg p-3 font-mono text-xs text-green-300 space-y-1">
+            <div>sudo cp root-ca.crt /usr/local/share/ca-certificates/</div>
+            <div>sudo update-ca-certificates</div>
+          </div>
+          <p class="text-gray-400 text-xs mt-2 mb-1">Fedora/RHEL/Arch:</p>
+          <div class="bg-gray-950 border border-gray-700 rounded-lg p-3 font-mono text-xs text-green-300 space-y-1">
+            <div>sudo cp root-ca.crt /etc/pki/ca-trust/source/anchors/</div>
+            <div>sudo update-ca-trust</div>
+          </div>
+          <p class="text-gray-500 text-xs pt-1">Firefox uses its own store — also import via <em>Settings → Privacy → View Certificates</em>.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Section 3: Personal Certificate ──────────────────────────── -->
+    <section id="stap-2" class="bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-5">
+      <div class="flex items-center gap-3">
+        <span class="flex items-center justify-center w-8 h-8 rounded-full bg-brand/20 text-brand font-bold text-sm">2</span>
+        <h2 class="text-xl font-semibold">Your Personal Certificate</h2>
+      </div>
+
+      <p class="text-gray-400 text-sm leading-relaxed">
+        You need a <strong class="text-gray-200">personal certificate</strong> 
+        to log in to the {{ app_title }} tools. Choose your operating system and enter your email address.
+      </p>
+
+      <!-- OS selector -->
+      <div>
+        <p class="text-xs text-gray-400 mb-2.5 font-medium uppercase tracking-wide">Operating System</p>
+        <div id="os-selector" class="flex flex-wrap gap-2">
+          <button type="button" class="os-btn" data-os="macos" onclick="selectOS('macos', this)">
+            <span class="os-icon">🍎</span>
+            <span class="os-label">macOS</span>
+            <span class="os-ver" id="os-ver-macos"></span>
+          </button>
+          <button type="button" class="os-btn" data-os="ios" onclick="selectOS('ios', this)">
+            <span class="os-icon">📱</span>
+            <span class="os-label">iPhone/iPad</span>
+            <span class="os-ver" id="os-ver-ios"></span>
+          </button>
+          <button type="button" class="os-btn" data-os="windows" onclick="selectOS('windows', this)">
+            <span class="os-icon">🪟</span>
+            <span class="os-label">Windows</span>
+            <span class="os-ver" id="os-ver-windows"></span>
+          </button>
+          <button type="button" class="os-btn" data-os="linux" onclick="selectOS('linux', this)">
+            <span class="os-icon">🐧</span>
+            <span class="os-label">Linux</span>
+            <span class="os-ver" id="os-ver-linux"></span>
+          </button>
+          <button type="button" class="os-btn" data-os="android" onclick="selectOS('android', this)">
+            <span class="os-icon">🤖</span>
+            <span class="os-label">Android</span>
+            <span class="os-ver" id="os-ver-android"></span>
+          </button>
+        </div>
+        <p id="os-format-hint" class="text-xs text-gray-500 mt-2"></p>
+      </div>
+
+      <!-- Hidden OS input -->
+      <input type="hidden" id="selected-os" value="macos" />
+
+      <!-- No-JS fallback form -->
+      <form id="cert-form" onsubmit="downloadCert(event)" class="space-y-3">
+        <div>
+          <label for="cert-email" class="block text-sm text-gray-400 mb-1.5">Email address</label>
+          <input id="cert-email" name="email" type="email" required
+                 placeholder="you@example.com"
+                 class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white
+                        placeholder-gray-500 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand
+                        transition-colors text-sm" />
+        </div>
+        <button type="submit" id="cert-btn"
+                class="flex items-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm transition-all
+                       bg-brand hover:bg-sky-400 text-white shadow-lg shadow-brand/25 active:scale-95">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+          </svg>
+          <span id="cert-btn-label">Download Certificate</span>
+        </button>
+      </form>
+
+      <!-- Result area -->
+      <div id="cert-result"></div>
+    </section>
+
+    <!-- ── Section 4: DNS Check ──────────────────────────────────────── -->
+    <section id="stap-3" class="bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-5">
+      <div class="flex items-center gap-3">
+        <span class="flex items-center justify-center w-8 h-8 rounded-full bg-brand/20 text-brand font-bold text-sm">3</span>
+        <h2 class="text-xl font-semibold">DNS Check</h2>
+      </div>
+
+      <p class="text-gray-400 text-sm">
+        Check whether this admin panel is reachable from your device.
+      </p>
+
+      <!-- Auto connectivity check result -->
+      <div id="dns-result" class="flex items-center gap-3 p-4 bg-gray-800/60 rounded-xl">
+        <div class="spinner"></div>
+        <span class="text-gray-400 text-sm">Checking connectivity…</span>
+      </div>
+
+      <!-- Noscript fallback -->
+      <noscript>
+        <div class="p-4 bg-yellow-900/30 border border-yellow-800/50 rounded-xl text-yellow-300 text-sm">
+          ⚠️ JavaScript is disabled — connectivity check not available.
+        </div>
+      </noscript>
+
+      <!-- Manual instructions -->
+      <div class="p-4 bg-gray-800/40 border border-gray-700/50 rounded-xl space-y-2">
+        <p class="text-sm font-medium text-gray-300">Not working?</p>
+        <p class="text-sm text-gray-400">
+          If the admin panel is not reachable, make sure your network/VPN is connected and
+          ask your administrator for the correct hostname or IP.
+        </p>
+      </div>
+    </section>
+
+    <!-- ── Section 5: You're Ready ──────────────────────────────────── -->
+    <section id="tools" class="space-y-4">
+      <h2 class="text-xl font-semibold">You're Ready</h2>
+      <p class="text-gray-400 text-sm">With the Root CA and your personal certificate installed, you can access the admin panel.</p>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <a href="/"
+           class="group flex items-start gap-3 p-4 bg-gray-900 border border-gray-800 rounded-xl
+                  hover:border-brand/50 hover:bg-gray-800/60 transition-all">
+          <span class="text-2xl">🔧</span>
+          <div class="min-w-0">
+            <div class="font-semibold text-sm group-hover:text-brand transition-colors">{{ app_title }}</div>
+            <div class="text-xs text-gray-500 font-mono">Dashboard</div>
+            <div class="text-xs text-gray-400 mt-1">Charger management, PKI, OCPP</div>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <div class="text-center text-xs text-gray-600 py-4">
+      {{ app_title }} · <a href="/" class="hover:text-gray-400">Admin</a>
+    </div>
+  </div>
+
+  <script>
+    // ── Tab switching ────────────────────────────────────────────────────
+    function switchTab(group, name, btn) {
+      document.querySelectorAll(`#stap-1 .tab-btn`).forEach(b => b.classList.remove('active'));
+      document.querySelectorAll(`[id^="${group}-"]`).forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(`${group}-${name}`).classList.add('active');
+    }
+
+    // ── OS Detection & Selector ──────────────────────────────────────────
+    const OS_CONFIG = {
+      macos:          { label: 'macOS',        icon: '🍎', ext: 'p12',    format: 'modern', hint: 'Modern PKCS#12 (AES-256) — for macOS 13 Ventura and newer' },
+      'macos-legacy': { label: 'macOS (old)',   icon: '🍎', ext: 'p12',    format: 'legacy', hint: 'Legacy PKCS#12 (3DES) — for macOS 12 Monterey and older' },
+      ios:            { label: 'iPhone/iPad',   icon: '📱', ext: 'p12',    format: 'legacy', hint: 'Legacy PKCS#12 (3DES) — iOS/iPadOS' },
+      windows:        { label: 'Windows',       icon: '🪟', ext: 'pfx',    format: 'modern', hint: 'Modern PKCS#12 as .pfx — for Windows 10 and newer' },
+      'windows-legacy':{ label: 'Windows (old)',icon: '🪟', ext: 'pfx',    format: 'legacy', hint: 'Legacy PKCS#12 as .pfx — for Windows 7/8' },
+      linux:          { label: 'Linux',         icon: '🐧', ext: 'tar.gz', format: 'pem',    hint: 'PEM bundle (.tar.gz) — cert.pem + key.pem + CA chain' },
+      android:        { label: 'Android',       icon: '🤖', ext: 'p12',    format: 'modern', hint: 'Modern PKCS#12 — for Android 9+' },
+    };
+
+    // OS auto-detection
+    function detectOS() {
+      const ua = navigator.userAgent;
+      const platform = navigator.platform || '';
+
+      if (/iPhone|iPad|iPod/.test(ua)) return 'ios';
+      if (/Android/.test(ua)) return 'android';
+      if (/Win/.test(platform) || /Windows/.test(ua)) {
+        // Windows version detection
+        const m = ua.match(/Windows NT (\d+\.\d+)/);
+        if (m) {
+          const ver = parseFloat(m[1]);
+          return ver >= 10 ? 'windows' : 'windows-legacy';
+        }
+        return 'windows';
+      }
+      if (/Mac/.test(platform) || /Macintosh/.test(ua)) {
+        // macOS version detection (e.g. "Mac OS X 10_15_7" or "Mac OS X 14_0")
+        const m = ua.match(/Mac OS X (\d+)[_.](\d+)/);
+        if (m) {
+          const major = parseInt(m[1]);
+          const minor = parseInt(m[2]);
+          // macOS 10.16+ is Big Sur, 11=Big Sur, 12=Monterey, 13=Ventura
+          const realMajor = major >= 11 ? major : (major === 10 && minor >= 16 ? 11 : major);
+          return realMajor >= 13 ? 'macos' : 'macos-legacy';
+        }
+        return 'macos';
+      }
+      if (/Linux/.test(platform) || /Linux/.test(ua)) return 'linux';
+      return 'macos';
+    }
+
+    function getOSVersion() {
+      const ua = navigator.userAgent;
+      if (/iPhone|iPad|iPod/.test(ua)) {
+        const m = ua.match(/OS (\d+)[_.](\d+)/);
+        return m ? `iOS ${m[1]}.${m[2]}` : 'iOS';
+      }
+      if (/Android/.test(ua)) {
+        const m = ua.match(/Android (\d+[\.\d]*)/);
+        return m ? `Android ${m[1]}` : 'Android';
+      }
+      if (/Windows NT/.test(ua)) {
+        const m = ua.match(/Windows NT (\d+\.\d+)/);
+        const map = {'10.0':'10/11','6.3':'8.1','6.2':'8','6.1':'7','6.0':'Vista'};
+        return m ? `Windows ${map[m[1]] || m[1]}` : 'Windows';
+      }
+      if (/Macintosh/.test(ua)) {
+        const m = ua.match(/Mac OS X (\d+)[_.](\d+)/);
+        if (m) {
+          const major = parseInt(m[1]);
+          const minor = parseInt(m[2]);
+          const realMajor = major >= 11 ? major : (major === 10 && minor >= 16 ? 11 : major);
+          const names = {10:'Yosemite',11:'Big Sur',12:'Monterey',13:'Ventura',14:'Sonoma',15:'Sequoia'};
+          return `macOS ${realMajor}` + (names[realMajor] ? ` ${names[realMajor]}` : '');
+        }
+        return 'macOS';
+      }
+      return '';
+    }
+
+    let _selectedOS = 'macos';
+
+    function selectOS(osKey, btn) {
+      _selectedOS = osKey;
+      document.getElementById('selected-os').value = osKey;
+
+      // Update button highlights
+      document.querySelectorAll('#os-selector .os-btn').forEach(b => b.classList.remove('selected'));
+      if (btn) btn.classList.add('selected');
+
+      // Update format hint
+      const cfg = OS_CONFIG[osKey] || OS_CONFIG['macos'];
+      document.getElementById('os-format-hint').textContent = cfg.hint;
+
+      // Update download button label
+      const extLabel = cfg.ext === 'tar.gz' ? '.tar.gz (PEM)' : `.${cfg.ext} (PKCS#12)`;
+      document.getElementById('cert-btn-label').textContent = `Download Certificate (${extLabel})`;
+
+      // Update Root CA download link
+      updateCaDownloadLink(osKey);
+    }
+
+    function updateCaDownloadLink(osKey) {
+      const btn = document.getElementById('ca-download-btn');
+      const label = document.getElementById('ca-download-label');
+      if (!btn || !label) return;
+
+      if (osKey === 'linux') {
+        btn.href = '/onboarding/ca.crt?format=pem';
+        label.textContent = 'Download Root CA (root-ca.crt)';
+      } else {
+        btn.href = '/onboarding/ca.crt';
+        label.textContent = 'Download Root CA (root-ca.cer)';
+      }
+    }
+
+    // Run on page load
+    (function initOS() {
+      const detected = detectOS();
+      const version = getOSVersion();
+      _selectedOS = detected;
+      document.getElementById('selected-os').value = detected;
+
+      // Set version labels
+      const btn = document.querySelector(`[data-os="${detected}"]`);
+      if (btn) {
+        btn.classList.add('selected');
+        const verEl = btn.querySelector('.os-ver');
+        if (verEl && version) verEl.textContent = version;
+      }
+
+      // Set hint + button label
+      const cfg = OS_CONFIG[detected] || OS_CONFIG['macos'];
+      document.getElementById('os-format-hint').textContent = cfg.hint;
+      const extLabel = cfg.ext === 'tar.gz' ? '.tar.gz (PEM)' : `.${cfg.ext} (PKCS#12)`;
+      document.getElementById('cert-btn-label').textContent = `Download Certificate (${extLabel})`;
+
+      updateCaDownloadLink(detected);
+    })();
+
+    // ── Certificate download ─────────────────────────────────────────────
+    async function downloadCert(e) {
+      e.preventDefault();
+      const email = document.getElementById('cert-email').value.trim();
+      const osType = document.getElementById('selected-os').value || 'macos';
+      const btn = document.getElementById('cert-btn');
+      const result = document.getElementById('cert-result');
+
+      if (!email) return;
+
+      btn.disabled = true;
+      btn.innerHTML = '<div class="spinner"></div><span>Loading…</span>';
+      result.innerHTML = '';
+
+      try {
+        const resp = await fetch('/onboarding/my-cert', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: `email=${encodeURIComponent(email)}&os_type=${encodeURIComponent(osType)}`,
+        });
+
+        if (resp.status === 404) {
+          result.innerHTML = `
+            <div class="p-4 bg-yellow-900/30 border border-yellow-800/50 rounded-xl text-yellow-300 text-sm fade-in">
+              <p class="font-medium">No certificate found</p>
+              <p class="text-yellow-400 mt-1">Ask your administrator to create one for <strong>${escHtml(email)}</strong>.</p>
+            </div>`;
+          return;
+        }
+
+        if (!resp.ok) {
+          const txt = await resp.text();
+          result.innerHTML = `
+            <div class="p-4 bg-red-900/30 border border-red-800/50 rounded-xl text-red-300 text-sm fade-in">
+              <p class="font-medium">An error occurred</p>
+              <p class="text-red-400 mt-1 font-mono text-xs">${escHtml(txt)}</p>
+            </div>`;
+          return;
+        }
+
+        const data = await resp.json();
+        showCertResult(email, data.password, data.download_url, data.file_ext, osType);
+
+      } catch (err) {
+        result.innerHTML = `
+          <div class="p-4 bg-red-900/30 border border-red-800/50 rounded-xl text-red-300 text-sm fade-in">
+            <p class="font-medium">Network error</p>
+            <p class="text-red-400 mt-1 text-xs">${escHtml(String(err))}</p>
+          </div>`;
+      } finally {
+        btn.disabled = false;
+        const cfg = OS_CONFIG[osType] || OS_CONFIG['macos'];
+        const extLabel = cfg.ext === 'tar.gz' ? '.tar.gz (PEM)' : `.${cfg.ext} (PKCS#12)`;
+        btn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+        </svg><span>Download Certificate (${extLabel})</span>`;
+      }
+    }
+
+    function showCertResult(email, password, downloadUrl, fileExt, osType) {
+      const safeEmail = escHtml(email);
+      const safePass = escHtml(password);
+      const cfg = OS_CONFIG[osType] || OS_CONFIG['macos'];
+      const filename = `${email.replace('@','_').replace(/\./g,'_')}-ocpp.${fileExt || cfg.ext}`;
+
+      // Build OS-specific install instructions
+      const installInstructions = {
+        macos: `
+          <p><strong class="text-white">macOS:</strong> Double-click the .p12 file → enter the password → Keychain Access stores it in the Login keychain</p>`,
+        'macos-legacy': `
+          <p><strong class="text-white">macOS (old):</strong> Double-click the .p12 file → enter the password → Keychain Access</p>`,
+        ios: `
+          <p><strong class="text-white">iPhone/iPad:</strong> Send the .p12 file to your device (AirDrop or email) → tap to install → Go to Settings → Profile Downloaded → Install</p>`,
+        windows: `
+          <p><strong class="text-white">Windows:</strong> Double-click the .pfx file → Import Certificate → Current User → enter the password → Finish</p>`,
+        'windows-legacy': `
+          <p><strong class="text-white">Windows:</strong> Double-click the .pfx file → Import Certificate → enter the password → Finish</p>`,
+        linux: `
+          <p><strong class="text-white">Linux (Firefox):</strong> Settings → Privacy → View Certificates → Your Certificates → Import → choose the .pem file inside the .tar.gz</p>
+          <p class="mt-1 text-gray-500 text-xs">First extract: <code class="bg-gray-800 px-1 rounded">tar xzf certificates.tar.gz</code> → import <code class="bg-gray-800 px-1 rounded">*-cert.pem</code> in Firefox. Password is needed for the private key.</p>`,
+        android: `
+          <p><strong class="text-white">Android:</strong> Open the .p12 file from Downloads → enter the password → give the certificate a name → Save</p>`,
+      };
+
+      const instructions = installInstructions[osType] || installInstructions['macos'];
+      const passLabel = fileExt === 'tar.gz' ? 'Key password' : 'PKCS#12 password';
+
+      document.getElementById('cert-result').innerHTML = `
+        <div class="space-y-3 fade-in">
+          <div class="p-4 bg-green-900/30 border border-green-800/50 rounded-xl space-y-3">
+            <p class="text-green-300 font-medium text-sm">✅ Certificate created for ${safeEmail}</p>
+
+            <div class="space-y-1">
+              <p class="text-xs text-gray-400">${escHtml(passLabel)} <span class="text-yellow-400">(save this — shown only once)</span>:</p>
+              <div class="flex items-center gap-2">
+                <code id="p12-password" class="flex-1 bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 font-mono text-sm text-green-300 select-all">${safePass}</code>
+                <button onclick="copyPassword()" class="copy-btn flex-shrink-0 px-3 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-gray-300 text-xs transition-colors" title="Copy password">
+                  📋 Copy
+                </button>
+              </div>
+            </div>
+
+            <a href="${downloadUrl}" download="${filename}"
+               class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm
+                      bg-brand hover:bg-sky-400 text-white transition-all active:scale-95">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+              </svg>
+              Download ${escHtml(filename)}
+            </a>
+          </div>
+
+          <div class="p-3 bg-gray-800/40 border border-gray-700/50 rounded-xl text-xs text-gray-400 space-y-1">
+            <p class="font-medium text-gray-300">📋 Installation instructions</p>
+            ${instructions}
+            <p class="text-yellow-500 mt-2">⚠️ Keep the password safe — you will need it during installation and the link will expire.</p>
+          </div>
+        </div>`;
+    }
+
+    function copyPassword() {
+      const el = document.getElementById('p12-password');
+      if (el) {
+        navigator.clipboard.writeText(el.textContent).then(() => {
+          const btn = document.querySelector('.copy-btn');
+          if (btn) { btn.textContent = '✅ Copied'; setTimeout(() => btn.innerHTML = '📋 Copy', 2000); }
+        });
+      }
+    }
+
+    function escHtml(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // ── DNS Check ────────────────────────────────────────────────────────
+    async function checkDns() {
+      const el = document.getElementById('dns-result');
+      try {
+        // Check connectivity to this admin panel
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000);
+        await fetch('/health', {
+          method: 'HEAD',
+          mode: 'same-origin',
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
+        el.innerHTML = `
+          <span class="text-2xl">✅</span>
+          <div>
+            <p class="text-green-300 font-medium text-sm">Connected!</p>
+            <p class="text-gray-400 text-xs mt-0.5">The admin panel is reachable from your device.</p>
+          </div>`;
+      } catch (err) {
+        const isAborted = err.name === 'AbortError';
+        el.innerHTML = `
+          <span class="text-2xl">${isAborted ? '⏱️' : '⚠️'}</span>
+          <div class="space-y-1">
+            <p class="text-yellow-300 font-medium text-sm">${isAborted ? 'Time-out' : 'Check manually'}</p>
+            <p class="text-gray-400 text-xs">
+              ${isAborted ? 'No response within 5 seconds.' : 'Could not verify connectivity automatically.'}
+              If you can read this page, your connection is working.
+            </p>
+          </div>`;
+      }
+    }
+
+    // Run DNS check on load
+    if (typeof fetch !== 'undefined') {
+      checkDns();
+    } else {
+      document.getElementById('dns-result').innerHTML = `
+        <span class="text-yellow-400">⚠️</span>
+        <span class="text-gray-400 text-sm">DNS check not supported in this browser.</span>`;
+    }
+  </script>
+</body>
+</html>

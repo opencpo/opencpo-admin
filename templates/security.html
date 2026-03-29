@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% set active = "security" %}
+{% block title %}Security — CPO Admin{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">Security Dashboard</h1>
+
+<div class="grid grid-cols-2 gap-6">
+    <!-- Security Events -->
+    <div class="bg-gray-900 rounded-lg border border-gray-800">
+        <div class="p-4 border-b border-gray-800">
+            <h2 class="text-lg font-semibold">🛡️ Recent Security Events</h2>
+        </div>
+        <div id="security-events" class="p-4 space-y-2 max-h-[400px] overflow-y-auto">
+            <div class="text-gray-500 text-sm">Loading security events from event bus...</div>
+        </div>
+    </div>
+
+    <!-- PKI Health -->
+    <div class="bg-gray-900 rounded-lg border border-gray-800">
+        <div class="p-4 border-b border-gray-800">
+            <h2 class="text-lg font-semibold">🔐 PKI Health</h2>
+        </div>
+        <div class="p-4 space-y-3" hx-get="/partials/stats" hx-trigger="load" hx-swap="innerHTML">
+            <div class="flex justify-between text-sm">
+                <span class="text-gray-400">Root CA</span>
+                <span class="text-green-400">✓ Valid</span>
+            </div>
+            <div class="flex justify-between text-sm">
+                <span class="text-gray-400">CPO Sub-CA</span>
+                <span class="text-green-400">✓ Valid</span>
+            </div>
+            <div class="flex justify-between text-sm">
+                <span class="text-gray-400">MO Sub-CA</span>
+                <span class="text-green-400">✓ Valid</span>
+            </div>
+            <div class="flex justify-between text-sm">
+                <span class="text-gray-400">OCSP Responder</span>
+                <span class="text-green-400">✓ Running</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Access Log -->
+<div class="mt-6 bg-gray-900 rounded-lg border border-gray-800">
+    <div class="p-4 border-b border-gray-800">
+        <h2 class="text-lg font-semibold">📋 OCPI Partner Status</h2>
+    </div>
+    <div class="p-4 text-sm text-gray-400">
+        Partner status loaded from OCPI credentials module.
+    </div>
+</div>
+
+<script>
+    // Connect to event stream for security events
+    const coreApi = location.protocol + '//' + location.hostname + ':8000';
+    const source = new EventSource(coreApi + '/api/v1/events/stream?types=ops.alert,pki.cert');
+    const secDiv = document.getElementById('security-events');
+
+    source.addEventListener('ops.alert', (e) => {
+        const data = JSON.parse(e.data);
+        const time = new Date(data.timestamp).toLocaleTimeString();
+        const el = document.createElement('div');
+        el.className = 'text-sm p-2 rounded bg-red-900/30 border border-red-800';
+        el.textContent = `[${time}] ${data.data.security_event || 'Alert'}: ${JSON.stringify(data.data)}`;
+        secDiv.prepend(el);
+    });
+
+    source.addEventListener('pki.cert.revoked', (e) => {
+        const data = JSON.parse(e.data);
+        const el = document.createElement('div');
+        el.className = 'text-sm p-2 rounded bg-yellow-900/30 border border-yellow-800';
+        el.textContent = `Certificate revoked: ${JSON.stringify(data.data)}`;
+        secDiv.prepend(el);
+    });
+</script>
+{% endblock %}

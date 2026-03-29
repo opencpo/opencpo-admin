@@ -1,0 +1,468 @@
+{% extends "base.html" %}
+{% set active = "pki" %}
+{% block title %}PKI — CPO Admin{% endblock %}
+
+{% block content %}
+
+<!-- Toast container -->
+<div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+<!-- Revoke Modal -->
+<div id="revoke-modal" class="fixed inset-0 z-40 hidden">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeRevokeModal()"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4">
+        <div class="bg-gray-900 border border-gray-700 rounded-xl p-6 w-full max-w-md shadow-2xl">
+            <h3 class="text-lg font-semibold text-red-400 mb-1">🚫 Revoke Certificate</h3>
+            <p class="text-sm text-gray-400 mb-4">This action cannot be undone.</p>
+            <div id="revoke-cert-info" class="p-3 bg-gray-800 rounded-lg text-sm text-gray-300 mb-4 font-mono break-all"></div>
+            <form hx-post="/action/pki/revoke" hx-target="#revoke-result" hx-swap="innerHTML">
+                <input type="hidden" name="serial" id="revoke-serial">
+                <div class="mb-4">
+                    <label class="block text-sm text-gray-400 mb-2">Revocation Reason</label>
+                    <select name="reason" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-gray-200 text-sm focus:outline-none focus:border-red-600">
+                        <option value="unspecified">Unspecified</option>
+                        <option value="keyCompromise">Key Compromise</option>
+                        <option value="cessationOfOperation">Cessation of Operation</option>
+                        <option value="superseded">Superseded</option>
+                        <option value="affiliationChanged">Affiliation Changed</option>
+                    </select>
+                </div>
+                <div id="revoke-result"></div>
+                <div class="flex gap-3 mt-4">
+                    <button type="button" onclick="closeRevokeModal()"
+                        class="flex-1 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                        class="flex-1 px-4 py-2 bg-red-700 hover:bg-red-600 text-white font-medium rounded-lg text-sm transition-colors">
+                        Confirm Revoke
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Page header -->
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <h1 class="text-2xl font-bold">🔐 PKI Certificate Management</h1>
+        <p class="text-sm text-gray-500 mt-0.5">Certificate authority, lifecycle, and trust management</p>
+    </div>
+    <button onclick="document.getElementById('issue-panel').classList.toggle('hidden')"
+        class="px-4 py-2 bg-brand-green/20 hover:bg-brand-green/30 border border-brand-green/40 text-brand-green rounded-lg text-sm font-medium transition-colors">
+        + Issue Certificate
+    </button>
+</div>
+
+<!-- CA Hierarchy -->
+<div class="bg-gray-900 rounded-xl border border-gray-800 p-5 mb-6">
+    <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-widest mb-4">CA Hierarchy</h2>
+    <div class="flex flex-col items-center gap-0">
+        <!-- Root CA -->
+        {% set root = hierarchy.root %}
+        <div class="w-full max-w-sm">
+            <div class="rounded-xl border {% if root.status == 'active' %}border-blue-700 bg-blue-900/20{% elif root.status == 'expiring' %}border-yellow-700 bg-yellow-900/10{% else %}border-red-700 bg-red-900/10{% endif %} p-4 cursor-pointer hover:border-opacity-80 transition-all"
+                 onclick="this.nextElementSibling.classList.toggle('hidden')">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-blue-400 font-bold text-sm">🏛 {{ root.cn }}</span>
+                            <span class="text-xs {% if root.status == 'active' %}bg-green-900 text-green-300{% elif root.status == 'expiring' %}bg-yellow-900 text-yellow-300{% else %}bg-red-900 text-red-300{% endif %} px-2 py-0.5 rounded-full">{{ root.status }}</span>
+                        </div>
+                        <div class="text-xs text-gray-500 mt-0.5 font-mono">{{ root.fingerprint[:40] }}…</div>
+                    </div>
+                    <div class="text-right text-xs text-gray-500">
+                        <div>Expires</div>
+                        <div class="text-gray-300">{{ root.not_after[:10] }}</div>
+                        <div class="text-gray-500">{{ root.days_left }}d left</div>
+                    </div>
+                </div>
+            </div>
+            <!-- Root CA detail (expandable) -->
+            <div class="hidden mt-2 p-3 bg-gray-800 rounded-lg text-xs space-y-1 font-mono">
+                <div><span class="text-gray-500">Subject:</span> <span class="text-gray-300">{{ root.subject }}</span></div>
+                <div><span class="text-gray-500">Serial:</span> <span class="text-gray-400">{{ root.serial }}</span></div>
+                <div><span class="text-gray-500">Valid:</span> <span class="text-gray-400">{{ root.not_before[:10] }} → {{ root.not_after[:10] }}</span></div>
+            </div>
+        </div>
+
+        <!-- Tree connector -->
+        <div class="flex flex-col items-center py-1">
+            <div class="w-px h-4 bg-gray-700"></div>
+            <div class="w-16 h-px bg-gray-700 relative">
+                <div class="absolute -top-px left-0 w-full flex justify-between">
+                </div>
+            </div>
+        </div>
+
+        <!-- Sub-CAs row -->
+        <div class="grid grid-cols-3 gap-4 w-full">
+            {% for sub in hierarchy.sub_cas %}
+            <div>
+                <div class="rounded-xl border {% if sub.status == 'active' %}border-gray-700 bg-gray-800/50{% elif sub.status == 'expiring' %}border-yellow-700/50 bg-yellow-900/10{% else %}border-red-700/50 bg-red-900/10{% endif %} p-3 cursor-pointer hover:border-gray-600 transition-all"
+                     onclick="this.nextElementSibling.classList.toggle('hidden')">
+                    <div class="flex items-center gap-1.5 mb-1">
+                        <span class="text-gray-300 text-xs font-semibold">{{ sub.cn }}</span>
+                        <span class="text-[10px] {% if sub.status == 'active' %}bg-green-900 text-green-400{% elif sub.status == 'expiring' %}bg-yellow-900 text-yellow-400{% else %}bg-red-900 text-red-400{% endif %} px-1.5 py-0.5 rounded-full">{{ sub.status }}</span>
+                    </div>
+                    <div class="text-[10px] text-gray-600 font-mono truncate">{{ sub.fingerprint[:20] }}…</div>
+                    <div class="text-[10px] text-gray-500 mt-1">Exp: {{ sub.not_after[:10] }} ({{ sub.days_left }}d)</div>
+                    <div class="text-[10px] text-gray-600 mt-0.5">{{ sub.role }}</div>
+                </div>
+                <!-- Sub-CA expandable detail -->
+                <div class="hidden mt-1 p-2 bg-gray-800 rounded-lg text-[10px] space-y-1 font-mono">
+                    <div class="text-gray-400 break-all">{{ sub.subject }}</div>
+                    <div class="text-gray-500 break-all">{{ sub.serial }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Stats Row -->
+<div class="grid grid-cols-6 gap-4 mb-6">
+    <div class="col-span-2 bg-gray-900 rounded-xl border border-gray-800 p-4 flex items-center gap-4">
+        <canvas id="status-chart" width="80" height="80"></canvas>
+        <div class="space-y-1">
+            <div class="flex items-center gap-2 text-sm">
+                <span class="w-2 h-2 rounded-full bg-green-400 inline-block"></span>
+                <span class="text-gray-400">Active</span>
+                <span class="ml-auto font-bold text-green-400">{{ stats.active or 0 }}</span>
+            </div>
+            <div class="flex items-center gap-2 text-sm">
+                <span class="w-2 h-2 rounded-full bg-red-400 inline-block"></span>
+                <span class="text-gray-400">Revoked</span>
+                <span class="ml-auto font-bold text-red-400">{{ stats.revoked or 0 }}</span>
+            </div>
+            <div class="flex items-center gap-2 text-sm">
+                <span class="w-2 h-2 rounded-full bg-yellow-400 inline-block"></span>
+                <span class="text-gray-400">Expiring</span>
+                <span class="ml-auto font-bold text-yellow-400">{{ stats.expiring_30d or 0 }}</span>
+            </div>
+        </div>
+    </div>
+    <div class="bg-gray-900 rounded-xl border border-gray-800 p-4">
+        <div class="text-3xl font-bold text-white">{{ (stats.active or 0) + (stats.revoked or 0) }}</div>
+        <div class="text-sm text-gray-500 mt-1">Total Issued</div>
+    </div>
+    <div class="bg-gray-900 rounded-xl border border-gray-800 p-4">
+        <div class="text-3xl font-bold text-blue-400">{{ stats.secc or 0 }}</div>
+        <div class="text-sm text-gray-500 mt-1">SECC Certs</div>
+    </div>
+    <div class="bg-gray-900 rounded-xl border border-gray-800 p-4">
+        <div class="text-3xl font-bold text-purple-400">{{ stats.contract or 0 }}</div>
+        <div class="text-sm text-gray-500 mt-1">Contract Certs</div>
+    </div>
+    <div class="bg-gray-900 rounded-xl border border-gray-800 p-4">
+        <div class="text-3xl font-bold text-yellow-400">{{ stats.expiring_30d or 0 }}</div>
+        <div class="text-sm text-gray-500 mt-1">Expiring (30d)</div>
+    </div>
+</div>
+
+<!-- Issue Certificate Panel (collapsible) -->
+<div id="issue-panel" class="hidden mb-6">
+    <div class="bg-gray-900 rounded-xl border border-brand-green/30 p-5">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-sm font-semibold text-brand-green uppercase tracking-widest">Issue New Certificate</h2>
+            <button onclick="document.getElementById('issue-panel').classList.add('hidden')"
+                class="text-gray-500 hover:text-gray-300">✕</button>
+        </div>
+
+        <!-- Tabs -->
+        <div class="flex gap-1 mb-4 bg-gray-800 p-1 rounded-lg w-fit">
+            <button onclick="switchIssueTab('secc')" id="tab-secc"
+                class="issue-tab px-4 py-2 rounded-md text-sm font-medium transition-colors bg-gray-700 text-white">
+                SECC
+            </button>
+            <button onclick="switchIssueTab('contract')" id="tab-contract"
+                class="issue-tab px-4 py-2 rounded-md text-sm font-medium transition-colors text-gray-400 hover:text-gray-200">
+                Contract
+            </button>
+            <button onclick="switchIssueTab('user')" id="tab-user"
+                class="issue-tab px-4 py-2 rounded-md text-sm font-medium transition-colors text-gray-400 hover:text-gray-200">
+                User
+            </button>
+        </div>
+
+        <!-- SECC Form -->
+        <div id="issue-form-secc">
+            <form hx-post="/action/pki/issue-secc" hx-target="#issue-secc-result"
+                  hx-encoding="multipart/form-data" class="space-y-3">
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Charge Point</label>
+                    <select name="charge_point_id" class="w-full max-w-xs bg-gray-800 border border-gray-700 rounded-lg p-2 text-gray-200 text-sm focus:outline-none focus:border-brand-green">
+                        <option value="">— Select charge point —</option>
+                        {% for cp_id in charger_ids %}
+                        <option value="{{ cp_id }}">{{ cp_id }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">CSR File <span class="text-gray-600">(optional — auto-generated if empty)</span></label>
+                    <input type="file" name="csr_file" accept=".pem,.csr,.txt"
+                        class="text-sm text-gray-400 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:bg-gray-700 file:text-gray-300 hover:file:bg-gray-600">
+                </div>
+                <div id="issue-secc-result"></div>
+                <button type="submit"
+                    class="px-4 py-2 bg-blue-700 hover:bg-blue-600 text-white font-medium rounded-lg text-sm transition-colors">
+                    Issue SECC Certificate
+                </button>
+            </form>
+        </div>
+
+        <!-- Contract Form -->
+        <div id="issue-form-contract" class="hidden">
+            <form hx-post="/action/pki/issue-contract" hx-target="#issue-contract-result" class="space-y-3">
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">EMAID <span class="text-gray-600">(e.g. NL-STM-C1234567-8)</span></label>
+                    <input type="text" name="emaid" placeholder="NL-STM-CXXXXXXX-X"
+                        class="w-full max-w-xs bg-gray-800 border border-gray-700 rounded-lg p-2 text-gray-200 text-sm font-mono focus:outline-none focus:border-brand-green">
+                </div>
+                <div id="issue-contract-result"></div>
+                <button type="submit"
+                    class="px-4 py-2 bg-purple-700 hover:bg-purple-600 text-white font-medium rounded-lg text-sm transition-colors">
+                    Issue Contract Certificate
+                </button>
+            </form>
+        </div>
+
+        <!-- User Form -->
+        <div id="issue-form-user" class="hidden">
+            <form hx-post="/action/pki/issue-user" hx-target="#issue-user-result" class="space-y-3">
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Name</label>
+                        <input type="text" name="name" placeholder="Full name"
+                            class="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-gray-200 text-sm focus:outline-none focus:border-brand-green">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Email</label>
+                        <input type="email" name="email" placeholder="user@example.com"
+                            class="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-gray-200 text-sm focus:outline-none focus:border-brand-green">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Role</label>
+                        <select name="role" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-gray-200 text-sm focus:outline-none focus:border-brand-green">
+                            <option value="admin">Admin</option>
+                            <option value="operator" selected>Operator</option>
+                            <option value="viewer">Viewer</option>
+                            <option value="installer">Installer</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="issue-user-result"></div>
+                <button type="submit"
+                    class="px-4 py-2 bg-teal-700 hover:bg-teal-600 text-white font-medium rounded-lg text-sm transition-colors">
+                    Issue User Certificate
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Main area: Certificate table + detail panel side by side -->
+<div class="flex gap-4">
+    <!-- Certificate Table -->
+    <div class="flex-1 min-w-0 bg-gray-900 rounded-xl border border-gray-800">
+        <!-- Table header + filters -->
+        <div class="p-4 border-b border-gray-800">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="font-semibold">Certificates</h2>
+                <button
+                    hx-get="/partials/pki/cert-rows"
+                    hx-target="#cert-tbody"
+                    hx-swap="innerHTML"
+                    class="text-xs text-gray-500 hover:text-gray-300 px-2 py-1 rounded hover:bg-gray-800">
+                    ↻ Refresh
+                </button>
+            </div>
+            <div class="flex gap-2 flex-wrap" id="filter-bar">
+                <select id="filter-status" onchange="applyFilters()"
+                    class="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-300 focus:outline-none">
+                    <option value="">All statuses</option>
+                    <option value="active">Active</option>
+                    <option value="revoked">Revoked</option>
+                    <option value="expired">Expired</option>
+                </select>
+                <select id="filter-type" onchange="applyFilters()"
+                    class="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-300 focus:outline-none">
+                    <option value="">All types</option>
+                    <option value="secc">SECC</option>
+                    <option value="contract">Contract</option>
+                    <option value="user">User</option>
+                </select>
+                <input type="text" id="filter-search" placeholder="Search serial, subject…"
+                    oninput="debounceFilters()"
+                    class="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-300 focus:outline-none focus:border-gray-600 w-56">
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full border-collapse">
+                <thead>
+                    <tr class="border-b border-gray-800 text-gray-500 text-[10px] tracking-[1px]">
+                        <th class="p-3 text-left">SERIAL</th>
+                        <th class="p-3 text-left">TYPE</th>
+                        <th class="p-3 text-left">SUBJECT</th>
+                        <th class="p-3 text-left">CHARGE POINT</th>
+                        <th class="p-3 text-left">STATUS</th>
+                        <th class="p-3 text-left">ISSUED</th>
+                        <th class="p-3 text-left">EXPIRES</th>
+                        <th class="p-3 text-left">ACTIONS</th>
+                    </tr>
+                </thead>
+                <tbody id="cert-tbody"
+                    hx-get="/partials/pki/cert-rows"
+                    hx-trigger="load, refresh"
+                    hx-swap="innerHTML">
+                    <tr><td colspan="8" class="p-6 text-center text-gray-600 text-sm">Loading…</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Certificate Detail Side Panel -->
+    <div id="cert-detail-panel" class="hidden w-80 flex-shrink-0 bg-gray-900 rounded-xl border border-gray-700 self-start sticky top-20">
+        <div class="p-4 text-center text-gray-500 text-sm">
+            Select a certificate to view details
+        </div>
+    </div>
+</div>
+
+<!-- Audit Log -->
+<div class="mt-6 bg-gray-900 rounded-xl border border-gray-800">
+    <div class="p-4 border-b border-gray-800 flex items-center justify-between">
+        <h2 class="font-semibold">Audit Log</h2>
+        <div class="flex gap-2">
+            <select id="audit-type" onchange="loadAuditLog()"
+                class="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-gray-400 focus:outline-none">
+                <option value="">All types</option>
+                <option value="secc">SECC</option>
+                <option value="contract">Contract</option>
+                <option value="user">User</option>
+            </select>
+            <input type="date" id="audit-from" onchange="loadAuditLog()"
+                class="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-gray-400 focus:outline-none">
+            <input type="date" id="audit-to" onchange="loadAuditLog()"
+                class="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-gray-400 focus:outline-none">
+        </div>
+    </div>
+    <div id="audit-log-content"
+        hx-get="/partials/pki/audit-log"
+        hx-trigger="load"
+        hx-swap="innerHTML"
+        class="p-4 max-h-80 overflow-y-auto">
+        <div class="text-center text-gray-600 text-sm py-4">Loading…</div>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script>
+// ── Toast system ─────────────────────────────────────────────────────────
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    const colors = {
+        success: 'bg-green-900 border-green-700 text-green-200',
+        error:   'bg-red-900 border-red-700 text-red-200',
+        warning: 'bg-yellow-900 border-yellow-700 text-yellow-200',
+        info:    'bg-gray-800 border-gray-700 text-gray-200',
+    };
+    const icons = { success: '✓', error: '✗', warning: '⚠', info: 'ℹ' };
+    const toast = document.createElement('div');
+    toast.className = `flex items-center gap-2 px-4 py-3 rounded-lg border text-sm shadow-xl pointer-events-auto max-w-xs ${colors[type] || colors.info}`;
+    toast.innerHTML = `<span>${icons[type] || icons.info}</span><span>${message}</span>`;
+    container.appendChild(toast);
+    setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; setTimeout(() => toast.remove(), 300); }, 4000);
+}
+
+// ── Revoke modal ──────────────────────────────────────────────────────────
+function openRevokeModal(serial, subjectHint) {
+    document.getElementById('revoke-serial').value = serial;
+    document.getElementById('revoke-cert-info').textContent = subjectHint || serial;
+    document.getElementById('revoke-result').innerHTML = '';
+    document.getElementById('revoke-modal').classList.remove('hidden');
+}
+function closeRevokeModal() {
+    document.getElementById('revoke-modal').classList.add('hidden');
+}
+
+// ── Issue tab switching ───────────────────────────────────────────────────
+function switchIssueTab(tab) {
+    ['secc', 'contract', 'user'].forEach(t => {
+        const form = document.getElementById('issue-form-' + t);
+        const btn = document.getElementById('tab-' + t);
+        if (form) form.classList.toggle('hidden', t !== tab);
+        if (btn) {
+            if (t === tab) {
+                btn.classList.add('bg-gray-700', 'text-white');
+                btn.classList.remove('text-gray-400');
+            } else {
+                btn.classList.remove('bg-gray-700', 'text-white');
+                btn.classList.add('text-gray-400');
+            }
+        }
+    });
+}
+
+// ── Certificate filtering ─────────────────────────────────────────────────
+let filterTimer = null;
+function debounceFilters() {
+    clearTimeout(filterTimer);
+    filterTimer = setTimeout(applyFilters, 400);
+}
+function applyFilters() {
+    const status = document.getElementById('filter-status').value;
+    const type = document.getElementById('filter-type').value;
+    const search = document.getElementById('filter-search').value;
+    const params = new URLSearchParams();
+    if (status) params.set('status', status);
+    if (type)   params.set('type', type);
+    if (search) params.set('search', search);
+    params.set('page', '1');
+    const tbody = document.getElementById('cert-tbody');
+    htmx.ajax('GET', '/partials/pki/cert-rows?' + params.toString(), { target: tbody, swap: 'innerHTML' });
+}
+
+// ── Audit log ─────────────────────────────────────────────────────────────
+function loadAuditLog() {
+    const type = document.getElementById('audit-type').value;
+    const from = document.getElementById('audit-from').value;
+    const to   = document.getElementById('audit-to').value;
+    const params = new URLSearchParams();
+    if (type) params.set('type', type);
+    if (from) params.set('date_from', from);
+    if (to)   params.set('date_to', to);
+    const el = document.getElementById('audit-log-content');
+    htmx.ajax('GET', '/partials/pki/audit-log?' + params.toString(), { target: el, swap: 'innerHTML' });
+}
+
+// ── Chart.js donut ────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    const ctx = document.getElementById('status-chart');
+    if (!ctx || typeof Chart === 'undefined') return;
+    const active   = {{ stats.active or 0 }};
+    const revoked  = {{ stats.revoked or 0 }};
+    const expiring = {{ stats.expiring_30d or 0 }};
+    const total = active + revoked;
+    if (total === 0) return;
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            datasets: [{
+                data: [Math.max(0, active - expiring), expiring, revoked],
+                backgroundColor: ['#22c55e', '#eab308', '#ef4444'],
+                borderColor: ['#166534', '#854d0e', '#991b1b'],
+                borderWidth: 1,
+            }]
+        },
+        options: {
+            cutout: '65%',
+            plugins: { legend: { display: false }, tooltip: { enabled: false } },
+            animation: { duration: 600 },
+        }
+    });
+});
+</script>
+
+{% endblock %}

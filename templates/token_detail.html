@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+{% set active = "tokens" %}
+{% block title %}Token {{ token.uid }} — CPO Admin{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="flex items-start justify-between mb-6">
+  <div>
+    <div class="flex items-center gap-3 mb-1">
+      <h1 class="font-mono text-2xl font-bold text-brand-blue">{{ token.uid }}</h1>
+      {% if token.status == 'active' %}<span class="px-3 py-1 bg-green-900 text-green-300 rounded-full text-sm font-semibold">Active</span>
+      {% elif token.status == 'blocked' %}<span class="px-3 py-1 bg-red-900 text-red-300 rounded-full text-sm font-semibold">Blocked</span>
+      {% elif token.status == 'revoked' %}<span class="px-3 py-1 bg-orange-900 text-orange-300 rounded-full text-sm font-semibold">Revoked</span>
+      {% else %}<span class="px-3 py-1 bg-gray-800 text-gray-400 rounded-full text-sm">{{ token.status }}</span>{% endif %}
+      {% if token.type == 'rfid' %}<span class="px-2 py-0.5 bg-blue-900 text-blue-300 rounded text-xs">RFID</span>
+      {% elif token.type == 'app' %}<span class="px-2 py-0.5 bg-purple-900 text-purple-300 rounded text-xs">App</span>
+      {% else %}<span class="px-2 py-0.5 bg-gray-800 text-gray-400 rounded text-xs">{{ token.type }}</span>{% endif %}
+    </div>
+    <div class="text-xs text-gray-500">Created {{ (token.created_at or '')[:10] }}</div>
+  </div>
+  <div class="flex gap-2">
+    <a href="/tokens" class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-xs text-gray-300">← Tokens</a>
+    {% if token.status == 'active' %}
+    <button onclick="openModal('modal-block')" class="px-3 py-1.5 bg-red-900/50 hover:bg-red-800 border border-red-800 rounded text-xs text-red-300">🚫 Block</button>
+    {% elif token.status == 'blocked' %}
+    <button hx-post="/action/token/unblock/{{ token.id }}" hx-target="#feedback" hx-swap="innerHTML"
+      class="px-3 py-1.5 bg-green-900/50 hover:bg-green-800 border border-green-800 rounded text-xs text-green-300">✓ Unblock</button>
+    {% endif %}
+    <button onclick="openModal('modal-replace')" class="px-3 py-1.5 bg-yellow-900/50 hover:bg-yellow-800 border border-yellow-800 rounded text-xs text-yellow-300">↩ Replace</button>
+    <button onclick="openModal('modal-edit')" class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-xs text-gray-300">✏️ Edit</button>
+  </div>
+</div>
+<div id="feedback" class="mb-4"></div>
+
+<div class="grid grid-cols-3 gap-4 mb-6">
+  <!-- Info card -->
+  <div class="col-span-2 bg-gray-900 border border-gray-800 rounded-xl p-5">
+    <h2 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Token Details</h2>
+    <div class="grid grid-cols-2 gap-4 text-sm">
+      <div>
+        <div class="text-xs text-gray-500 mb-1">Driver Name</div>
+        <div class="text-gray-200">{{ token.driver_name or '—' }}</div>
+      </div>
+      <div>
+        <div class="text-xs text-gray-500 mb-1">Driver Email</div>
+        <div class="text-gray-200">{{ token.driver_email or '—' }}</div>
+      </div>
+      <div>
+        <div class="text-xs text-gray-500 mb-1">Driver Phone</div>
+        <div class="text-gray-200">{{ token.driver_phone or '—' }}</div>
+      </div>
+      <div>
+        <div class="text-xs text-gray-500 mb-1">Group</div>
+        <div>{% if token.group_id %}<a href="/groups/{{ token.group_id }}" class="text-brand-blue hover:underline">{{ token.group_name or token.group_id }}</a>{% else %}—{% endif %}</div>
+      </div>
+      <div>
+        <div class="text-xs text-gray-500 mb-1">Valid From</div>
+        <div class="text-gray-200">{{ (token.valid_from or '')[:10] or '—' }}</div>
+      </div>
+      <div>
+        <div class="text-xs text-gray-500 mb-1">Valid Until</div>
+        <div class="text-gray-200">{{ (token.valid_until or '')[:10] or '—' }}</div>
+      </div>
+      <div>
+        <div class="text-xs text-gray-500 mb-1">Label</div>
+        <div class="text-gray-200">{{ token.label or '—' }}</div>
+      </div>
+      <div>
+        <div class="text-xs text-gray-500 mb-1">Card Number</div>
+        <div class="font-mono text-gray-200 text-xs">{{ token.card_number or '—' }}</div>
+      </div>
+      {% if token.blocked_reason %}
+      <div class="col-span-2">
+        <div class="text-xs text-gray-500 mb-1">Block Reason</div>
+        <div class="text-red-300 text-sm">{{ token.blocked_reason }}</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Lifecycle card -->
+  <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+    <h2 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Lifecycle</h2>
+    <div class="space-y-3 text-sm">
+      {% for milestone, ts in [
+        ('Ordered', token.ordered_at),
+        ('Shipped', token.shipped_at),
+        ('Activated', token.activated_at),
+        ('Blocked', token.blocked_at),
+      ] %}
+      <div class="flex items-center gap-2">
+        <div class="w-2 h-2 rounded-full {% if ts %}bg-green-400{% else %}bg-gray-700{% endif %}"></div>
+        <span class="text-gray-400 flex-1">{{ milestone }}</span>
+        <span class="text-xs text-gray-500">{{ (ts or '')[:10] or '—' }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% if token.replaces_id or token.replaced_by_id %}
+    <div class="mt-4 pt-4 border-t border-gray-800">
+      <div class="text-xs text-gray-500 mb-2">Replacement Chain</div>
+      {% if token.replaces_id %}
+      <div class="text-xs mb-1">Replaces: <a href="/tokens/{{ token.replaces_id }}" class="text-brand-blue hover:underline font-mono">{{ token.replaces_id[:8] }}…</a></div>
+      {% endif %}
+      {% if token.replaced_by_id %}
+      <div class="text-xs">Replaced by: <a href="/tokens/{{ token.replaced_by_id }}" class="text-yellow-400 hover:underline font-mono">{{ token.replaced_by_id[:8] }}…</a></div>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Sessions -->
+<div class="bg-gray-900 border border-gray-800 rounded-xl p-5 mb-4">
+  <h2 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Recent Sessions (last 20)</h2>
+  {% if sessions %}
+  <table class="w-full text-sm">
+    <thead><tr class="border-b border-gray-800 text-[10px] tracking-widest text-gray-600 uppercase">
+      <th class="pb-2 text-left">Date</th><th class="pb-2 text-left">Charger</th>
+      <th class="pb-2 text-right">kWh</th><th class="pb-2 text-left">Status</th><th class="pb-2 text-left">Stop Reason</th>
+    </tr></thead>
+    <tbody>
+    {% for s in sessions %}
+    <tr class="border-b border-gray-800/50 hover:bg-gray-800/30">
+      <td class="py-2 text-xs text-gray-400">{{ (s.start_time or '')[:16].replace('T',' ') }}</td>
+      <td class="py-2 font-mono text-xs text-gray-300">{{ s.charge_point }}</td>
+      <td class="py-2 text-right text-xs text-gray-200">{{ '%.3f'|format(s.energy_kwh) }}</td>
+      <td class="py-2"><span class="px-1.5 py-0.5 rounded text-xs {% if s.status == 'completed' %}bg-blue-900 text-blue-300{% elif s.status == 'active' %}bg-green-900 text-green-300{% else %}bg-gray-800 text-gray-500{% endif %}">{{ s.status }}</span></td>
+      <td class="py-2 text-xs text-gray-500">{{ s.stop_reason or '—' }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="text-sm text-gray-500 text-center py-4">No sessions yet</div>
+  {% endif %}
+</div>
+
+<!-- Audit Log -->
+<div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+  <h2 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Audit Log</h2>
+  {% if events %}
+  <div class="space-y-2">
+    {% for e in events %}
+    <div class="flex gap-3 py-1.5 border-b border-gray-800/50 last:border-0">
+      <div class="w-16 text-xs text-gray-600 whitespace-nowrap pt-0.5">{{ (e.created_at or '')[:10] }}</div>
+      <div class="flex-1">
+        <span class="font-semibold text-xs
+          {% if e.event in ['activated','unblocked','created'] %}text-green-400
+          {% elif e.event in ['blocked','revoked','replaced'] %}text-red-400
+          {% elif e.event == 'used' %}text-blue-400
+          {% else %}text-gray-400{% endif %}">{{ e.event }}</span>
+        {% if e.details %}<span class="text-xs text-gray-500 ml-2">{{ e.details }}</span>{% endif %}
+      </div>
+      <div class="text-xs text-gray-600">{{ e.actor or '' }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="text-sm text-gray-500 text-center py-4">No events recorded</div>
+  {% endif %}
+</div>
+
+<!-- Block Modal -->
+<div id="modal-block" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+  <div class="bg-gray-900 border border-gray-700 rounded-xl p-6 w-full max-w-sm shadow-2xl">
+    <h3 class="font-semibold text-gray-100 mb-4">Block Token</h3>
+    <form hx-post="/action/token/block/{{ token.id }}" hx-target="#feedback" hx-swap="innerHTML" class="space-y-3">
+      <div><label class="block text-xs text-gray-400 mb-1">Reason</label>
+        <input name="reason" placeholder="Lost card…" class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm"></div>
+      <div class="flex gap-3">
+        <button type="button" onclick="closeModal('modal-block')" class="px-4 py-2 bg-gray-800 rounded text-sm text-gray-300">Cancel</button>
+        <button type="submit" class="flex-1 px-4 py-2 bg-red-700 text-white font-bold rounded text-sm hover:bg-red-600" onclick="setTimeout(()=>location.reload(),1200)">Block</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Replace Modal -->
+<div id="modal-replace" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+  <div class="bg-gray-900 border border-gray-700 rounded-xl p-6 w-full max-w-sm shadow-2xl">
+    <h3 class="font-semibold text-gray-100 mb-1">Replace Token</h3>
+    <p class="text-xs text-gray-500 mb-4">New token is created and linked. Old token is blocked.</p>
+    <form hx-post="/action/token/replace/{{ token.id }}" hx-target="#feedback" hx-swap="innerHTML" class="space-y-3">
+      <div><label class="block text-xs text-gray-400 mb-1">New UID *</label>
+        <input name="new_uid" required class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm font-mono"></div>
+      <div class="flex gap-3">
+        <button type="button" onclick="closeModal('modal-replace')" class="px-4 py-2 bg-gray-800 rounded text-sm text-gray-300">Cancel</button>
+        <button type="submit" class="flex-1 px-4 py-2 bg-yellow-700 text-white font-bold rounded text-sm" onclick="setTimeout(()=>location.reload(),1200)">Replace</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div id="modal-edit" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+  <div class="bg-gray-900 border border-gray-700 rounded-xl p-6 w-full max-w-md shadow-2xl">
+    <h3 class="font-semibold text-gray-100 mb-4">Edit Token</h3>
+    <form hx-put="/action/token/update/{{ token.id }}" hx-target="#feedback" hx-swap="innerHTML" class="space-y-3">
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="block text-xs text-gray-400 mb-1">Driver Name</label>
+          <input name="driver_name" value="{{ token.driver_name or '' }}" class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm"></div>
+        <div><label class="block text-xs text-gray-400 mb-1">Driver Email</label>
+          <input name="driver_email" value="{{ token.driver_email or '' }}" class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm"></div>
+        <div><label class="block text-xs text-gray-400 mb-1">Driver Phone</label>
+          <input name="driver_phone" value="{{ token.driver_phone or '' }}" class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm"></div>
+        <div><label class="block text-xs text-gray-400 mb-1">Group</label>
+          <select name="group_id" class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm">
+            <option value="">No group</option>
+            {% for g in groups %}<option value="{{ g.id }}" {% if g.id|string == token.group_id|string %}selected{% endif %}>{{ g.name }}</option>{% endfor %}
+          </select></div>
+        <div><label class="block text-xs text-gray-400 mb-1">Label</label>
+          <input name="label" value="{{ token.label or '' }}" class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm"></div>
+        <div><label class="block text-xs text-gray-400 mb-1">Card Number</label>
+          <input name="card_number" value="{{ token.card_number or '' }}" class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm font-mono"></div>
+        <div><label class="block text-xs text-gray-400 mb-1">Valid From</label>
+          <input name="valid_from" type="date" value="{{ (token.valid_from or '')[:10] }}" class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm"></div>
+        <div><label class="block text-xs text-gray-400 mb-1">Valid Until</label>
+          <input name="valid_until" type="date" value="{{ (token.valid_until or '')[:10] }}" class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm"></div>
+      </div>
+      <div class="flex gap-3 pt-2">
+        <button type="button" onclick="closeModal('modal-edit')" class="px-4 py-2 bg-gray-800 rounded text-sm text-gray-300">Cancel</button>
+        <button type="submit" class="flex-1 px-4 py-2 bg-brand-blue text-white font-bold rounded text-sm" onclick="setTimeout(()=>location.reload(),1200)">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+</script>
+{% endblock %}

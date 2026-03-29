@@ -1,0 +1,314 @@
+{% extends "base.html" %}
+{% set active = "groups" %}
+{% block title %}{{ group.name }} — CPO Admin{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="text-2xl font-bold text-gray-100">{{ group.name }}</h1>
+    {% if group.billing_reference %}<div class="text-xs text-gray-500 mt-0.5">Ref: {{ group.billing_reference }}</div>{% endif %}
+  </div>
+  <div class="flex gap-2">
+    <a href="/groups" class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-xs text-gray-300">← Groups</a>
+    <button onclick="openModal('modal-edit')" class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-xs text-gray-300">✏️ Edit</button>
+  </div>
+</div>
+<div id="feedback" class="mb-4"></div>
+
+<div class="grid grid-cols-3 gap-4 mb-6">
+  <!-- Group Info -->
+  <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+    <h2 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Contact Details</h2>
+    <div class="space-y-3 text-sm">
+      {% if group.billing_email %}
+      <div><div class="text-xs text-gray-500">Email</div><div class="text-gray-200">{{ group.billing_email }}</div></div>
+      {% endif %}
+      {% if group.billing_address %}
+      <div><div class="text-xs text-gray-500">Address</div><div class="text-gray-200 whitespace-pre-line text-xs">{{ group.billing_address }}</div></div>
+      {% endif %}
+      {% if group.contact_name %}
+      <div><div class="text-xs text-gray-500">Contact</div><div class="text-gray-200">{{ group.contact_name }}</div></div>
+      {% endif %}
+      {% if group.contact_phone %}
+      <div><div class="text-xs text-gray-500">Phone</div><div class="text-gray-200">{{ group.contact_phone }}</div></div>
+      {% endif %}
+      {% if group.notes %}
+      <div><div class="text-xs text-gray-500">Notes</div><div class="text-gray-400 text-xs">{{ group.notes }}</div></div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Invoice generator -->
+  <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+    <h2 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Generate Invoice PDF</h2>
+    <form action="/groups/{{ group.id }}/invoice" method="get" class="space-y-3">
+      <div><label class="block text-xs text-gray-400 mb-1">Month</label>
+        <input name="month" type="month" value="{{ current_month }}"
+          class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm"></div>
+      <button type="submit" class="w-full px-4 py-2.5 bg-brand-blue hover:opacity-90 text-white font-bold rounded text-sm">
+        ⬇ Download Invoice PDF
+      </button>
+    </form>
+  </div>
+
+  <!-- Monthly Summary -->
+  <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+    <h2 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Monthly Usage</h2>
+    {% if monthly_summary %}
+    <table class="w-full text-xs">
+      <thead><tr class="border-b border-gray-800 text-gray-600">
+        <th class="pb-2 text-left">Month</th><th class="pb-2 text-right">Sessions</th><th class="pb-2 text-right">kWh</th><th class="pb-2 text-right">Cost</th>
+      </tr></thead>
+      <tbody>
+      {% for m in monthly_summary %}
+      <tr class="border-b border-gray-800/40">
+        <td class="py-1.5 text-gray-300">{{ m.month }}</td>
+        <td class="py-1.5 text-right text-gray-400">{{ m.sessions }}</td>
+        <td class="py-1.5 text-right font-mono text-gray-300">{{ '%.1f'|format(m.kwh) }}</td>
+        <td class="py-1.5 text-right font-mono text-gray-200">€{{ '%.2f'|format(m.cost) }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="text-sm text-gray-500 text-center py-4">No usage data</div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ══ Billing Configuration ══════════════════════════════════════════════ -->
+<div class="bg-gray-900 border border-gray-800 rounded-xl p-5 mb-6">
+  <div class="flex items-center justify-between mb-5">
+    <h2 class="text-xs font-bold text-gray-500 uppercase tracking-widest">Billing Configuration</h2>
+    <!-- Mandate status badge -->
+    {% set ms = group.mandate_status %}
+    {% if ms == 'valid' %}
+      <span class="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-green-900/40 text-green-300 border border-green-800">
+        <span class="w-2 h-2 rounded-full bg-green-400"></span> Mandate Valid
+      </span>
+    {% elif ms == 'pending' %}
+      <span class="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-yellow-900/40 text-yellow-300 border border-yellow-800">
+        <span class="w-2 h-2 rounded-full bg-yellow-400"></span> Mandate Pending
+      </span>
+    {% elif ms == 'invalid' or ms == 'revoked' %}
+      <span class="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-red-900/40 text-red-300 border border-red-800">
+        <span class="w-2 h-2 rounded-full bg-red-400"></span> Mandate {{ ms|capitalize }}
+      </span>
+    {% else %}
+      <span class="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-gray-800 text-gray-400 border border-gray-700">
+        <span class="w-2 h-2 rounded-full bg-gray-500"></span> No Mandate
+      </span>
+    {% endif %}
+  </div>
+
+  <form action="/groups/{{ group.id }}/billing" method="post" class="space-y-5">
+
+    <!-- Billing method -->
+    <div>
+      <label class="block text-xs text-gray-400 mb-3">Billing Method</label>
+      <div class="flex gap-4">
+        {% for val, label in [('invoice','Invoice (bank transfer)'),('direct_debit','Direct Debit (SEPA)'),('prepaid','Prepaid (per session)')] %}
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="radio" name="billing_method" value="{{ val }}"
+            {% if (group.billing_method or 'invoice') == val %}checked{% endif %}
+            onchange="toggleBillingFields(this.value)"
+            class="accent-brand-blue">
+          <span class="text-sm text-gray-300">{{ label }}</span>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-6">
+      <!-- Left column -->
+      <div class="space-y-4">
+        <!-- IBAN + BIC (shown for direct_debit) -->
+        <div id="sepa-fields" class="{{ 'hidden' if (group.billing_method or 'invoice') != 'direct_debit' else '' }}">
+          <div class="p-4 rounded-lg border border-gray-700 bg-gray-800/50 space-y-3">
+            <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">SEPA Details</div>
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">IBAN</label>
+              <input name="iban" value="{{ group.iban or '' }}" placeholder="NL91 ABNA 0417 1643 00"
+                class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm font-mono text-gray-200 focus:border-brand-blue focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">BIC</label>
+              <input name="bic" value="{{ group.bic or '' }}" placeholder="ABNANL2A"
+                class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm font-mono text-gray-200 focus:border-brand-blue focus:outline-none">
+            </div>
+            <!-- SEPA Mandate button -->
+            <div id="mandate-actions" class="pt-1">
+              {% if group.mandate_status == 'valid' %}
+                <div class="text-xs text-green-400">✓ SEPA mandate active — Mollie ID: {{ group.mollie_mandate_id or '—' }}</div>
+              {% else %}
+                <button type="button" onclick="setupMandate()" id="mandate-btn"
+                  class="w-full px-4 py-2 bg-brand-blue hover:opacity-90 text-white font-bold rounded text-sm transition-opacity">
+                  🏦 Setup SEPA Mandate
+                </button>
+                <div id="mandate-result" class="mt-2 text-xs text-gray-400"></div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- KVK + BTW -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">KVK Number</label>
+            <input name="kvk_number" value="{{ group.kvk_number or '' }}" placeholder="12345678"
+              class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm font-mono text-gray-200 focus:border-brand-blue focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">BTW Number</label>
+            <input name="btw_number" value="{{ group.btw_number or '' }}" placeholder="NL123456789B01"
+              class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm font-mono text-gray-200 focus:border-brand-blue focus:outline-none">
+          </div>
+        </div>
+      </div>
+
+      <!-- Right column -->
+      <div class="space-y-4">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">Payment Terms (days)</label>
+            <input name="payment_terms_days" type="number" min="0" max="120"
+              value="{{ group.payment_terms_days or 30 }}"
+              class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm font-mono text-gray-200 focus:border-brand-blue focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">Max Invoice Amount (€)</label>
+            <input name="max_invoice_amount" type="number" min="0" step="0.01"
+              value="{{ group.max_invoice_amount or 10000 }}"
+              class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm font-mono text-gray-200 focus:border-brand-blue focus:outline-none">
+          </div>
+        </div>
+
+        {% if group.mollie_customer_id %}
+        <div class="text-xs text-gray-500">
+          Mollie Customer: <span class="font-mono text-gray-400">{{ group.mollie_customer_id }}</span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="flex justify-end">
+      <button type="submit"
+        class="px-6 py-2.5 bg-brand-blue hover:opacity-90 text-white font-bold rounded text-sm transition-opacity">
+        💾 Save Billing Settings
+      </button>
+    </div>
+  </form>
+  <div id="billing-feedback" class="mt-3"></div>
+</div>
+
+<!-- Tokens table -->
+<div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden mb-4">
+  <div class="flex items-center justify-between p-4 border-b border-gray-800">
+    <h2 class="text-xs font-bold text-gray-500 uppercase tracking-widest">Tokens in Group ({{ tokens|length }})</h2>
+    <a href="/tokens?group={{ group.id }}" class="text-xs text-brand-blue hover:underline">View all →</a>
+  </div>
+  <table class="w-full text-sm">
+    <thead><tr class="border-b border-gray-800 text-[10px] tracking-widest text-gray-500 uppercase">
+      <th class="p-3 text-left">UID</th>
+      <th class="p-3 text-left">Status</th>
+      <th class="p-3 text-left">Driver</th>
+      <th class="p-3 text-right">Sessions</th>
+      <th class="p-3 text-right">Total kWh</th>
+      <th class="p-3 text-left">Last Used</th>
+    </tr></thead>
+    <tbody>
+    {% for t in tokens %}
+    <tr class="border-b border-gray-800/50 hover:bg-gray-800/40">
+      <td class="p-3"><a href="/tokens/{{ t.id }}" class="font-mono text-brand-blue hover:underline text-xs">{{ t.uid }}</a></td>
+      <td class="p-3">
+        {% if t.status == 'active' %}<span class="px-2 py-0.5 bg-green-900 text-green-300 rounded-full text-xs">Active</span>
+        {% elif t.status == 'blocked' %}<span class="px-2 py-0.5 bg-red-900 text-red-300 rounded-full text-xs">Blocked</span>
+        {% else %}<span class="px-2 py-0.5 bg-gray-800 text-gray-500 rounded-full text-xs">{{ t.status }}</span>{% endif %}
+      </td>
+      <td class="p-3 text-xs text-gray-300">{{ t.driver_name or '—' }}</td>
+      <td class="p-3 text-right text-xs text-gray-400">{{ t.session_count }}</td>
+      <td class="p-3 text-right font-mono text-xs text-gray-300">{{ '%.1f'|format(t.total_kwh) }}</td>
+      <td class="p-3 text-xs text-gray-500">{{ (t.last_used or '')[:10] or '—' }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="6" class="p-6 text-center text-gray-500 text-sm">No tokens in this group</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Edit Modal -->
+<div id="modal-edit" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+  <div class="bg-gray-900 border border-gray-700 rounded-xl p-6 w-full max-w-md shadow-2xl">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="font-semibold text-gray-100">Edit Group</h3>
+      <button onclick="closeModal('modal-edit')" class="text-gray-500 hover:text-gray-300 text-xl">✕</button>
+    </div>
+    <form hx-put="/action/group/update/{{ group.id }}" hx-target="#feedback" hx-swap="innerHTML" class="space-y-3">
+      <div><label class="block text-xs text-gray-400 mb-1">Name *</label>
+        <input name="name" required value="{{ group.name }}" class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm"></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="block text-xs text-gray-400 mb-1">Billing Email</label>
+          <input name="billing_email" type="email" value="{{ group.billing_email or '' }}" class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm"></div>
+        <div><label class="block text-xs text-gray-400 mb-1">Billing Reference</label>
+          <input name="billing_reference" value="{{ group.billing_reference or '' }}" class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm"></div>
+      </div>
+      <div><label class="block text-xs text-gray-400 mb-1">Billing Address</label>
+        <textarea name="billing_address" rows="2" class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm">{{ group.billing_address or '' }}</textarea></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="block text-xs text-gray-400 mb-1">Contact Name</label>
+          <input name="contact_name" value="{{ group.contact_name or '' }}" class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm"></div>
+        <div><label class="block text-xs text-gray-400 mb-1">Contact Phone</label>
+          <input name="contact_phone" value="{{ group.contact_phone or '' }}" class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm"></div>
+      </div>
+      <div><label class="block text-xs text-gray-400 mb-1">Notes</label>
+        <textarea name="notes" rows="2" class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm">{{ group.notes or '' }}</textarea></div>
+      <div class="flex gap-3 pt-2">
+        <button type="button" onclick="closeModal('modal-edit')" class="px-4 py-2 bg-gray-800 rounded text-sm text-gray-300">Cancel</button>
+        <button type="submit" class="flex-1 px-4 py-2 bg-brand-blue text-white font-bold rounded text-sm" onclick="setTimeout(()=>location.reload(),1200)">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+function toggleBillingFields(method) {
+  const sepaFields = document.getElementById('sepa-fields');
+  if (method === 'direct_debit') {
+    sepaFields.classList.remove('hidden');
+  } else {
+    sepaFields.classList.add('hidden');
+  }
+}
+
+async function setupMandate() {
+  const btn = document.getElementById('mandate-btn');
+  const result = document.getElementById('mandate-result');
+  btn.disabled = true;
+  btn.textContent = '⏳ Setting up…';
+  try {
+    const resp = await fetch('/groups/{{ group.id }}/mandate', { method: 'POST' });
+    const data = await resp.json();
+    if (data.redirect_url) {
+      result.innerHTML = '<span class="text-yellow-300">✓ Redirecting to Mollie…</span>';
+      window.open(data.redirect_url, '_blank');
+    } else if (data.error) {
+      result.innerHTML = '<span class="text-red-400">Error: ' + data.error + '</span>';
+      btn.disabled = false;
+      btn.textContent = '🏦 Setup SEPA Mandate';
+    } else {
+      result.innerHTML = '<span class="text-gray-400">Response: ' + JSON.stringify(data) + '</span>';
+      btn.disabled = false;
+      btn.textContent = '🏦 Setup SEPA Mandate';
+    }
+  } catch(e) {
+    result.innerHTML = '<span class="text-red-400">Request failed: ' + e.message + '</span>';
+    btn.disabled = false;
+    btn.textContent = '🏦 Setup SEPA Mandate';
+  }
+}
+</script>
+{% endblock %}

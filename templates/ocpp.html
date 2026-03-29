@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% set active = "ocpp" %}
+{% block title %}OCPP Messages — CPO Admin{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">OCPP Message Viewer</h1>
+
+<!-- Live event stream -->
+<div class="bg-gray-900 rounded-lg border border-gray-800">
+    <div class="p-4 border-b border-gray-800 flex justify-between items-center">
+        <h2 class="text-lg font-semibold">Live Events</h2>
+        <div class="flex items-center space-x-3">
+            <span id="event-status" class="text-green-400 text-sm">● Connected</span>
+            <button onclick="clearEvents()" class="px-3 py-1 bg-gray-800 rounded text-sm hover:bg-gray-700">Clear</button>
+        </div>
+    </div>
+    <div id="event-log" class="p-4 font-mono text-xs max-h-[600px] overflow-y-auto space-y-1">
+        <div class="text-gray-500">Connecting to event stream...</div>
+    </div>
+</div>
+
+<script>
+    const log = document.getElementById('event-log');
+    const status = document.getElementById('event-status');
+    let eventCount = 0;
+
+    function connectSSE() {
+        // Connect to OCPP Core event stream directly
+        const coreApi = '{{ request.url.scheme }}://{{ request.url.hostname }}:8000';
+        const source = new EventSource(coreApi + '/api/v1/events/stream');
+
+        source.onopen = () => {
+            status.innerHTML = '● Connected';
+            status.className = 'text-green-400 text-sm';
+        };
+
+        source.onerror = () => {
+            status.innerHTML = '● Disconnected';
+            status.className = 'text-red-400 text-sm';
+            setTimeout(connectSSE, 3000);
+        };
+
+        source.onmessage = (e) => addEvent(e);
+
+        // Listen for specific event types
+        const types = ['charger.boot', 'charger.online', 'charger.offline', 'charger.status',
+                       'session.start', 'session.meter', 'session.stop', 'session.cdr',
+                       'auth.result', 'pki.cert.issued', 'ops.alert'];
+        types.forEach(t => {
+            source.addEventListener(t, (e) => addEvent(e));
+        });
+    }
+
+    function addEvent(e) {
+        eventCount++;
+        const data = JSON.parse(e.data);
+        const time = new Date(data.timestamp).toLocaleTimeString();
+        const type = data.type;
+        const cp = data.charge_point || '';
+
+        let color = 'text-gray-300';
+        if (type.startsWith('session.start')) color = 'text-green-400';
+        else if (type.startsWith('session.stop')) color = 'text-yellow-400';
+        else if (type.startsWith('session.meter')) color = 'text-blue-400';
+        else if (type.startsWith('charger.boot')) color = 'text-purple-400';
+        else if (type.startsWith('charger.offline')) color = 'text-red-400';
+        else if (type.startsWith('auth')) color = 'text-cyan-400';
+        else if (type.startsWith('pki')) color = 'text-orange-400';
+        else if (type.startsWith('ops.alert')) color = 'text-red-500 font-bold';
+
+        const line = document.createElement('div');
+        line.className = color;
+        line.textContent = `[${time}] ${type} ${cp} ${JSON.stringify(data.data)}`;
+        log.appendChild(line);
+
+        // Auto-scroll
+        log.scrollTop = log.scrollHeight;
+
+        // Keep max 500 lines
+        while (log.children.length > 500) {
+            log.removeChild(log.firstChild);
+        }
+    }
+
+    function clearEvents() {
+        log.innerHTML = '<div class="text-gray-500">Cleared. Waiting for events...</div>';
+        eventCount = 0;
+    }
+
+    connectSSE();
+</script>
+{% endblock %}

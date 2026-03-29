@@ -1,0 +1,18 @@
+<div class="grid grid-cols-4 gap-4 mb-8">
+    <div class="bg-gray-900 rounded-lg p-4 border border-gray-800">
+        <div class="text-3xl font-bold text-brand-green">{{ charger_count }}</div>
+        <div class="text-sm text-gray-400">Chargers</div>
+    </div>
+    <div class="bg-gray-900 rounded-lg p-4 border border-gray-800">
+        <div class="text-3xl font-bold text-brand-blue">{{ stats.active or 0 }}</div>
+        <div class="text-sm text-gray-400">Active Sessions</div>
+    </div>
+    <div class="bg-gray-900 rounded-lg p-4 border border-gray-800">
+        <div class="text-3xl font-bold text-white">{{ "%.1f"|format(stats.total_energy_kwh or 0) }}</div>
+        <div class="text-sm text-gray-400">Total kWh</div>
+    </div>
+    <div class="bg-gray-900 rounded-lg p-4 border border-gray-800">
+        <div class="text-3xl font-bold text-yellow-400">{{ stats.completed or 0 }}</div>
+        <div class="text-sm text-gray-400">Completed Sessions</div>
+    </div>
+</div>

@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% set active = "groups" %}
+{% block title %}Groups — CPO Admin{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+  <h1 class="text-2xl font-bold text-gray-100">Token Groups <span class="text-gray-500 text-lg">({{ groups|length }})</span></h1>
+  <button onclick="openModal('modal-create')" class="px-4 py-2 bg-green-700 hover:bg-green-600 text-white rounded text-sm font-semibold">+ Add Group</button>
+</div>
+
+<div id="feedback" class="mb-4"></div>
+
+<div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="border-b border-gray-800 text-[10px] tracking-widest text-gray-500 uppercase">
+        <th class="p-4 text-left">Group</th>
+        <th class="p-4 text-left">Cards</th>
+        <th class="p-4 text-right">This Month kWh</th>
+        <th class="p-4 text-right">This Month Cost</th>
+        <th class="p-4 text-left">Contact</th>
+        <th class="p-4 text-right">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for g in groups %}
+      <tr class="border-b border-gray-800/50 hover:bg-gray-800/40 transition-colors">
+        <td class="p-4">
+          <a href="/groups/{{ g.id }}" class="font-semibold text-gray-100 hover:text-brand-blue transition-colors">{{ g.name }}</a>
+          {% if g.billing_reference %}<div class="text-xs text-gray-500 mt-0.5">Ref: {{ g.billing_reference }}</div>{% endif %}
+        </td>
+        <td class="p-4">
+          <span class="text-green-400 font-bold">{{ g.active_count }}</span>
+          <span class="text-gray-600">/{{ g.token_count }} active</span>
+        </td>
+        <td class="p-4 text-right font-mono text-gray-300">{{ '%.1f'|format(g.month_kwh) }}</td>
+        <td class="p-4 text-right font-mono text-gray-200">€ {{ '%.2f'|format(g.month_cost) }}</td>
+        <td class="p-4 text-xs text-gray-400">
+          {% if g.contact_name %}<div>{{ g.contact_name }}</div>{% endif %}
+          {% if g.billing_email %}<div class="text-gray-600">{{ g.billing_email }}</div>{% endif %}
+        </td>
+        <td class="p-4">
+          <div class="flex gap-2 justify-end">
+            <a href="/groups/{{ g.id }}" class="px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded text-xs text-gray-300">View</a>
+            <button onclick="openEditModal('{{ g.id }}','{{ g.name|replace("'","\\'")|e }}','{{ g.billing_email or '' }}','{{ g.billing_address or '' }}','{{ g.billing_reference or '' }}','{{ g.contact_name or '' }}','{{ g.contact_phone or '' }}')"
+              class="px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded text-xs text-gray-300">Edit</button>
+            <button hx-delete="/action/group/delete/{{ g.id }}" hx-target="#feedback" hx-swap="innerHTML"
+              hx-confirm="Delete group '{{ g.name }}'? (Only works if no active tokens)"
+              class="px-2 py-1 bg-red-900/30 hover:bg-red-900/60 rounded text-xs text-red-400">✕</button>
+          </div>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="p-8 text-center text-gray-500 text-sm">No groups yet</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Create Modal -->
+<div id="modal-create" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+  <div class="bg-gray-900 border border-gray-700 rounded-xl p-6 w-full max-w-md shadow-2xl">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="font-semibold text-gray-100">Create Group</h3>
+      <button onclick="closeModal('modal-create')" class="text-gray-500 hover:text-gray-300 text-xl">✕</button>
+    </div>
+    <form hx-post="/action/group/create" hx-target="#feedback" hx-swap="innerHTML" class="space-y-3">
+      <div><label class="block text-xs text-gray-400 mb-1">Name *</label>
+        <input name="name" required class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm"></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="block text-xs text-gray-400 mb-1">Billing Email</label>
+          <input name="billing_email" type="email" class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm"></div>
+        <div><label class="block text-xs text-gray-400 mb-1">Billing Reference</label>
+          <input name="billing_reference" class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm"></div>
+      </div>
+      <div><label class="block text-xs text-gray-400 mb-1">Billing Address</label>
+        <textarea name="billing_address" rows="2" class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm"></textarea></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="block text-xs text-gray-400 mb-1">Contact Name</label>
+          <input name="contact_name" class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm"></div>
+        <div><label class="block text-xs text-gray-400 mb-1">Contact Phone</label>
+          <input name="contact_phone" class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm"></div>
+      </div>
+      <div class="flex gap-3 pt-2">
+        <button type="button" onclick="closeModal('modal-create')" class="px-4 py-2 bg-gray-800 rounded text-sm text-gray-300">Cancel</button>
+        <button type="submit" class="flex-1 px-4 py-2 bg-brand-blue text-white font-bold rounded text-sm" onclick="setTimeout(()=>location.reload(),1200)">Create</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div id="modal-edit" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+  <div class="bg-gray-900 border border-gray-700 rounded-xl p-6 w-full max-w-md shadow-2xl">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="font-semibold text-gray-100">Edit Group</h3>
+      <button onclick="closeModal('modal-edit')" class="text-gray-500 hover:text-gray-300 text-xl">✕</button>
+    </div>
+    <form id="edit-form" hx-target="#feedback" hx-swap="innerHTML" class="space-y-3">
+      <div><label class="block text-xs text-gray-400 mb-1">Name *</label>
+        <input id="edit-name" name="name" required class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm"></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="block text-xs text-gray-400 mb-1">Billing Email</label>
+          <input id="edit-email" name="billing_email" type="email" class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm"></div>
+        <div><label class="block text-xs text-gray-400 mb-1">Billing Reference</label>
+          <input id="edit-ref" name="billing_reference" class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm"></div>
+      </div>
+      <div><label class="block text-xs text-gray-400 mb-1">Billing Address</label>
+        <textarea id="edit-addr" name="billing_address" rows="2" class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm"></textarea></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="block text-xs text-gray-400 mb-1">Contact Name</label>
+          <input id="edit-cname" name="contact_name" class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm"></div>
+        <div><label class="block text-xs text-gray-400 mb-1">Contact Phone</label>
+          <input id="edit-cphone" name="contact_phone" class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm"></div>
+      </div>
+      <div class="flex gap-3 pt-2">
+        <button type="button" onclick="closeModal('modal-edit')" class="px-4 py-2 bg-gray-800 rounded text-sm text-gray-300">Cancel</button>
+        <button type="submit" class="flex-1 px-4 py-2 bg-brand-blue text-white font-bold rounded text-sm" onclick="setTimeout(()=>location.reload(),1200)">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+function openEditModal(id, name, email, addr, ref_, cname, cphone) {
+  const form = document.getElementById('edit-form');
+  form.setAttribute('hx-put', '/action/group/update/' + id);
+  htmx.process(form);
+  document.getElementById('edit-name').value = name;
+  document.getElementById('edit-email').value = email;
+  document.getElementById('edit-addr').value = addr;
+  document.getElementById('edit-ref').value = ref_;
+  document.getElementById('edit-cname').value = cname;
+  document.getElementById('edit-cphone').value = cphone;
+  openModal('modal-edit');
+}
+</script>
+{% endblock %}

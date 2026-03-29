@@ -1,0 +1,525 @@
+{# Canonical EMS Energy Flow Diagram — v2.0 (rAF dot animation)
+   Usage: set ems_url = '/api/...' then include this partial.
+   The data-ems-url on the wrapper div drives polling. #}
+<style>
+  #ems-flow-diagram * { box-sizing: border-box; }
+  @keyframes emsDashFwd { to { stroke-dashoffset: -24; } }
+  @keyframes emsDashRev { to { stroke-dashoffset: 24; } }
+  @keyframes livePulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+  .ems-fl-fwd { animation: emsDashFwd 1.2s linear infinite; }
+  .ems-fl-rev { animation: emsDashRev 1.2s linear infinite; }
+  .ems-live-pulse { animation: livePulse 2s ease-in-out infinite; }
+  .ems-card { background:#0d2137; border:1px solid #1a3a5c; border-radius:12px; padding:16px; }
+  .ems-lbl { font-size:9px; letter-spacing:2px; color:#64748b; font-weight:700; text-transform:uppercase; margin-bottom:10px; }
+  .ems-sub { background:#0a1628; border-radius:8px; padding:10px; }
+  .ems-ph { width:100%; border-collapse:collapse; background:#0a1628; border-radius:8px; overflow:hidden; }
+  .ems-ph th { padding:5px 6px; font-size:10px; color:#475569; text-align:right; font-weight:500; }
+  .ems-ph th:first-child { text-align:left; }
+  .ems-ph td { padding:5px 6px; font-size:12px; font-family:monospace; text-align:right; border-bottom:1px solid #0a1929; }
+  .ems-ph td:first-child { text-align:left; color:#64748b; font-size:11px; }
+  .ems-mono { font-family:'SF Mono',Monaco,'Cascadia Code',monospace; }
+</style>
+
+<div id="ems-flow-diagram" data-ems-url="{{ ems_url }}">
+
+  <!-- Status bar -->
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+    <div id="ems-live-dot" style="width:8px;height:8px;border-radius:50%;background:#64748b;flex-shrink:0;"></div>
+    <span id="ems-live-label" style="font-size:11px;font-family:monospace;color:#64748b;">Connecting...</span>
+    <span id="ems-updated" style="font-size:10px;color:#334155;margin-left:auto;"></span>
+  </div>
+
+  <!-- Summary cards -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px;">
+    <div class="ems-card" style="border-top:3px solid #10b981;text-align:center;">
+      <div class="ems-lbl">⚡ Grid</div>
+      <div id="sc-grid" class="ems-mono" style="font-size:22px;font-weight:800;color:#10b981;">—</div>
+      <div id="sc-grid-dir" style="font-size:10px;color:#64748b;margin-top:2px;">—</div>
+    </div>
+    <div class="ems-card" style="border-top:3px solid #fbbf24;text-align:center;">
+      <div class="ems-lbl">☀️ Solar</div>
+      <div id="sc-solar" class="ems-mono" style="font-size:22px;font-weight:800;color:#64748b;">—</div>
+      <div style="font-size:10px;color:#64748b;margin-top:2px;">kW</div>
+    </div>
+    <div class="ems-card" style="border-top:3px solid #8b5cf6;text-align:center;">
+      <div class="ems-lbl">🔋 Battery SoC</div>
+      <div id="sc-soc" class="ems-mono" style="font-size:22px;font-weight:800;color:#8b5cf6;">—%</div>
+      <div id="sc-batt-state" style="font-size:10px;color:#64748b;margin-top:2px;">—</div>
+    </div>
+    <div class="ems-card" style="border-top:3px solid #00B0E4;text-align:center;">
+      <div class="ems-lbl">🔌 Chargers</div>
+      <div id="sc-ev" class="ems-mono" style="font-size:22px;font-weight:800;color:#64748b;">—</div>
+      <div id="sc-ev-state" style="font-size:10px;color:#64748b;margin-top:2px;">no sessions</div>
+    </div>
+  </div>
+
+  <!-- SVG Flow Diagram -->
+  <div class="ems-card" style="padding:0;overflow:hidden;margin-bottom:12px;">
+    <svg id="ems-flow-svg" viewBox="0 0 920 420" style="width:100%;display:block;">
+      <defs>
+        <filter id="ems-glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3"/></filter>
+      </defs>
+      <!-- Flow lines -->
+      <path id="ems-fl-grid"  d="M 130,210 L 320,210"                              stroke="#1e3a5f" stroke-width="2" fill="none" stroke-dasharray="4,8" stroke-linecap="round" opacity="0.35"/>
+      <path id="ems-fl-solar" d="M 460,100 L 460,170"                              stroke="#1e3a5f" stroke-width="2" fill="none" stroke-dasharray="4,8" stroke-linecap="round" opacity="0.35"/>
+      <path id="ems-fl-batt"  d="M 460,255 L 460,320"                              stroke="#1e3a5f" stroke-width="2" fill="none" stroke-dasharray="4,8" stroke-linecap="round" opacity="0.35"/>
+      <path id="ems-fl-bld"   d="M 600,195 L 720,195 Q 755,195 755,160 L 755,110"  stroke="#1e3a5f" stroke-width="2" fill="none" stroke-dasharray="4,8" stroke-linecap="round" opacity="0.35"/>
+      <path id="ems-fl-ev"    d="M 600,230 L 720,230 Q 755,230 755,270 L 755,320"  stroke="#1e3a5f" stroke-width="2" fill="none" stroke-dasharray="4,8" stroke-linecap="round" opacity="0.35"/>
+      <!-- Dots — JS-driven via rAF, no animateMotion -->
+      <circle id="ems-dot-grid"  r="4" cx="130" cy="210" fill="#10b981" opacity="0" filter="url(#ems-glow)"/>
+      <circle id="ems-dot-grid2" r="4" cx="225" cy="210" fill="#10b981" opacity="0" filter="url(#ems-glow)"/>
+      <circle id="ems-dot-solar" r="4" cx="460" cy="100" fill="#fbbf24" opacity="0" filter="url(#ems-glow)"/>
+      <circle id="ems-dot-batt"  r="4" cx="460" cy="255" fill="#10b981" opacity="0" filter="url(#ems-glow)"/>
+      <circle id="ems-dot-bld"   r="4" cx="600" cy="195" fill="#94a3b8" opacity="0" filter="url(#ems-glow)"/>
+      <circle id="ems-dot-ev"    r="4" cx="600" cy="230" fill="#00B0E4"  opacity="0" filter="url(#ems-glow)"/>
+      <!-- Grid node -->
+      <rect x="15"  y="165" width="110" height="90" rx="10" fill="#0d2137" stroke="#1a3a5c"/>
+      <text x="70"  y="188" text-anchor="middle" fill="#64748b" font-size="9" font-family="monospace" font-weight="700">GRID</text>
+      <text id="ems-fv-grid"     x="70"  y="218" text-anchor="middle" fill="#10b981" font-size="22" font-family="monospace" font-weight="800">0,0 kW</text>
+      <text id="ems-fv-grid-dir" x="70"  y="238" text-anchor="middle" fill="#64748b" font-size="10" font-family="monospace">import</text>
+      <!-- Inverter (center hub) -->
+      <rect x="330" y="170" width="260" height="80" rx="10" fill="#0d2137" stroke="#00B0E4" stroke-opacity="0.5"/>
+      <text x="460" y="195" text-anchor="middle" fill="#00B0E4" font-size="9" font-family="monospace" font-weight="700">INVERTER · Afore AF50K-TH</text>
+      <text id="ems-fv-inv"  x="400" y="225" text-anchor="middle" fill="#e2e8f0" font-size="18" font-family="monospace" font-weight="700">0 W</text>
+      <text id="ems-fv-mode" x="530" y="225" text-anchor="middle" fill="#10b981" font-size="11" font-family="monospace" font-weight="600">Normaal</text>
+      <!-- Solar node -->
+      <rect x="400" y="15"  width="120" height="80" rx="10" fill="#0d2137" stroke="#1a3a5c"/>
+      <text x="460" y="40"  text-anchor="middle" fill="#64748b" font-size="9" font-family="monospace" font-weight="700">SOLAR</text>
+      <text id="ems-fv-solar" x="460" y="70" text-anchor="middle" fill="#64748b" font-size="22" font-family="monospace" font-weight="800">0,0 kW</text>
+      <!-- Battery node -->
+      <rect x="380" y="320" width="160" height="90" rx="10" fill="#0d2137" stroke="#1a3a5c"/>
+      <text x="460" y="345" text-anchor="middle" fill="#64748b" font-size="9" font-family="monospace" font-weight="700">BATTERY · 140 kWh</text>
+      <text id="ems-fv-batt" x="460" y="375" text-anchor="middle" fill="#8b5cf6" font-size="20" font-family="monospace" font-weight="800">— kW</text>
+      <text id="ems-fv-soc"  x="460" y="398" text-anchor="middle" fill="#8b5cf6" font-size="12" font-family="monospace">—%</text>
+      <!-- Building node -->
+      <rect x="690" y="20"  width="120" height="80" rx="10" fill="#0d2137" stroke="#1a3a5c"/>
+      <text x="750" y="45"  text-anchor="middle" fill="#64748b" font-size="9" font-family="monospace" font-weight="700">BUILDING</text>
+      <text id="ems-fv-bld" x="750" y="75" text-anchor="middle" fill="#94a3b8" font-size="22" font-family="monospace" font-weight="800">0,0 kW</text>
+      <!-- EV Chargers node -->
+      <rect x="690" y="320" width="120" height="80" rx="10" fill="#0d2137" stroke="#1a3a5c"/>
+      <text x="750" y="345" text-anchor="middle" fill="#64748b" font-size="9" font-family="monospace" font-weight="700">CHARGERS</text>
+      <text id="ems-fv-ev" x="750" y="375" text-anchor="middle" fill="#64748b" font-size="22" font-family="monospace" font-weight="800">0,0 kW</text>
+    </svg>
+  </div>
+
+  <!-- Detail cards row 1: Grid, Solar, Battery -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px;">
+
+    <!-- Grid detail -->
+    <div class="ems-card" id="ems-grid-card" style="border-top:3px solid #10b981;">
+      <div class="ems-lbl">⚡ Grid</div>
+      <div id="ems-grid-value" class="ems-mono" style="font-size:28px;font-weight:800;color:#10b981;">0,0 <span style="font-size:12px;color:#64748b;">kW</span></div>
+      <div id="ems-grid-dir" style="font-size:11px;color:#64748b;margin-bottom:10px;">import</div>
+      <table class="ems-ph">
+        <thead><tr><th>Phase</th><th>Volt</th><th>Amp</th><th>Watt</th></tr></thead>
+        <tbody>
+          <tr><td>L1</td><td id="ems-v-l1">—</td><td id="ems-i-l1">—</td><td id="ems-w-l1">—</td></tr>
+          <tr><td>L2</td><td id="ems-v-l2">—</td><td id="ems-i-l2">—</td><td id="ems-w-l2">—</td></tr>
+          <tr><td>L3</td><td id="ems-v-l3">—</td><td id="ems-i-l3">—</td><td id="ems-w-l3">—</td></tr>
+        </tbody>
+      </table>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;">
+        <div class="ems-sub" style="text-align:center;"><div style="font-size:10px;color:#64748b;">Frequency</div><div id="ems-freq" class="ems-mono" style="font-size:16px;font-weight:700;">— Hz</div></div>
+        <div class="ems-sub" style="text-align:center;"><div style="font-size:10px;color:#64748b;">Utilization</div><div id="ems-util-pct" class="ems-mono" style="font-size:16px;font-weight:700;">—%</div></div>
+      </div>
+      <div style="margin-top:10px;">
+        <div style="height:8px;background:#0a1628;border-radius:4px;overflow:hidden;">
+          <div id="ems-grid-bar" style="height:100%;width:0%;background:#10b981;border-radius:4px;transition:width 0.5s;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:#64748b;margin-top:3px;">
+          <span>0 kW</span><span id="ems-grid-limit">86 kW</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Solar detail -->
+    <div class="ems-card" id="ems-solar-card" style="border-top:3px solid #64748b;">
+      <div class="ems-lbl">☀️ Solar</div>
+      <div style="text-align:center;margin-bottom:10px;">
+        <div id="ems-solar-value" class="ems-mono" style="font-size:36px;font-weight:800;color:#64748b;">0,0 <span style="font-size:14px;">kW</span></div>
+        <div id="ems-solar-state" style="font-size:11px;color:#64748b;margin-top:4px;">— Idle</div>
+      </div>
+      <div style="height:6px;background:#0a1628;border-radius:3px;overflow:hidden;">
+        <div id="ems-solar-bar" style="height:100%;width:0%;background:#fbbf24;border-radius:3px;transition:width 0.5s;"></div>
+      </div>
+    </div>
+
+    <!-- Battery detail -->
+    <div class="ems-card" id="ems-batt-card" style="border-top:3px solid #8b5cf6;">
+      <div class="ems-lbl">🔋 Battery</div>
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:10px;">
+        <svg width="90" height="90" viewBox="0 0 100 100" style="flex-shrink:0;">
+          <circle cx="50" cy="50" r="40" fill="none" stroke="#1a3a5c" stroke-width="8"/>
+          <circle id="ems-soc-ring" cx="50" cy="50" r="40" fill="none" stroke="#8b5cf6" stroke-width="8"
+            stroke-dasharray="0 251.3" stroke-linecap="round" transform="rotate(-90 50 50)"
+            style="transition:stroke-dasharray 0.8s ease,stroke 0.5s;"/>
+          <text id="ems-soc-text"  x="50" y="45" text-anchor="middle" font-size="18" font-weight="800" fill="#8b5cf6" font-family="monospace">—%</text>
+          <text id="ems-soc-arrow" x="50" y="62" text-anchor="middle" font-size="11" fill="#64748b" font-family="monospace">●</text>
+        </svg>
+        <div style="flex:1;">
+          <div id="ems-batt-state" style="font-size:13px;font-weight:700;color:#64748b;margin-bottom:4px;">Idle</div>
+          <div id="ems-batt-power" class="ems-mono" style="font-size:22px;font-weight:800;color:#8b5cf6;">— <span style="font-size:12px;color:#64748b;">kW</span></div>
+          <div style="font-size:10px;color:#475569;margin-top:4px;">State of Charge</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div class="ems-sub" style="text-align:center;"><div style="font-size:10px;color:#64748b;">Voltage</div><div id="ems-batt-volt" class="ems-mono" style="font-size:15px;font-weight:700;color:#8b5cf6;">— V</div></div>
+        <div class="ems-sub" style="text-align:center;"><div style="font-size:10px;color:#64748b;">Temp</div><div id="ems-batt-temp" class="ems-mono" style="font-size:15px;font-weight:700;color:#f59e0b;">— °C</div></div>
+      </div>
+    </div>
+
+  </div><!-- /detail row 1 -->
+
+  <!-- Detail cards row 2: EV, Building, EMS Mode -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+
+    <div class="ems-card" style="border-top:3px solid #00B0E4;">
+      <div class="ems-lbl">🔌 Chargers</div>
+      <div style="text-align:center;margin-bottom:10px;">
+        <div id="ems-ev-value" class="ems-mono" style="font-size:28px;font-weight:800;color:#64748b;">0,0 <span style="font-size:12px;">kW</span></div>
+        <div id="ems-ev-state" style="font-size:11px;color:#64748b;">no sessions</div>
+      </div>
+      <div id="ems-ev-profiles" style="font-size:12px;color:#64748b;"></div>
+    </div>
+
+    <div class="ems-card" style="border-top:3px solid #64748b;">
+      <div class="ems-lbl">🏢 Gebouw / Building</div>
+      <div style="text-align:center;">
+        <div id="ems-bld-value" class="ems-mono" style="font-size:28px;font-weight:800;color:#64748b;">0,0 <span style="font-size:12px;">kW</span></div>
+        <div style="font-size:11px;color:#64748b;margin-top:4px;">calculated consumption</div>
+      </div>
+    </div>
+
+    <div class="ems-card" style="border-top:3px solid #00B0E4;">
+      <div class="ems-lbl">🧠 EMS Modus</div>
+      <div id="ems-mode" style="font-size:18px;font-weight:700;color:#10b981;margin-bottom:6px;">—</div>
+      <div id="ems-reason" style="font-size:11px;color:#64748b;line-height:1.4;"></div>
+      <div style="margin-top:12px;">
+        <div style="font-size:10px;color:#64748b;margin-bottom:4px;">Available capacity</div>
+        <div id="ems-available" class="ems-mono" style="font-size:20px;font-weight:800;color:#00B0E4;">— kW</div>
+      </div>
+    </div>
+
+  </div><!-- /detail row 2 -->
+
+</div><!-- #ems-flow-diagram -->
+
+<script>
+(function() {
+  const W = document.getElementById('ems-flow-diagram');
+  const EMS_URL = W.dataset.emsUrl || '';
+  let LIMIT = 86;
+  const fmt = n => typeof n === 'number' ? n.toFixed(1).replace('.', ',') : '—';
+  const $  = id => document.getElementById(id);
+  const sa = (id, a, v) => { const e=$(id); if(e) e.setAttribute(a, v); };
+  const sp = (id, val, unit, c) => { const e=$(id); if(e&&val!=null){ e.textContent=(typeof val==='number'?val.toFixed(1):val)+unit; if(c) e.style.color=c; }};
+
+  // ── rAF dot animation ───────────────────────────────────────────────────
+
+  function samplePath(pathEl, numPoints) {
+    const len = pathEl.getTotalLength();
+    const pts = [];
+    for (let i = 0; i <= numPoints; i++) {
+      const pt = pathEl.getPointAtLength((i / numPoints) * len);
+      pts.push({ x: pt.x, y: pt.y });
+    }
+    return pts;
+  }
+
+  function interpolatePath(points, t) {
+    const idx = t * (points.length - 1);
+    const i = Math.floor(idx);
+    const frac = idx - i;
+    const a = points[Math.min(i, points.length - 1)];
+    const b = points[Math.min(i + 1, points.length - 1)];
+    return { x: a.x + (b.x - a.x) * frac, y: a.y + (b.y - a.y) * frac };
+  }
+
+  function kwToSpeed(absKw) {
+    return Math.max(0.3, Math.min(1.2, 0.3 + (absKw / 60) * 0.9));
+  }
+
+  // Path waypoints (sampled once from SVG <path> elements after DOM is ready)
+  const gridPath  = [{ x: 130, y: 210 }, { x: 320, y: 210 }];
+  const solarPath = [{ x: 460, y: 100 }, { x: 460, y: 170 }];
+  const battPath  = [{ x: 460, y: 255 }, { x: 460, y: 320 }];
+  let bldPath     = null;
+  let evPath      = null;
+
+  const dots = {
+    gridDot1: { progress: 0.0, speed: 0.3, direction: 1, active: false, color: '#10b981', el: null, path: gridPath  },
+    gridDot2: { progress: 0.5, speed: 0.3, direction: 1, active: false, color: '#10b981', el: null, path: gridPath  },
+    solarDot: { progress: 0.0, speed: 0.3, direction: 1, active: false, color: '#fbbf24', el: null, path: solarPath },
+    battDot:  { progress: 0.0, speed: 0.3, direction: 1, active: false, color: '#10b981', el: null, path: battPath  },
+    bldDot:   { progress: 0.0, speed: 0.3, direction: 1, active: false, color: '#94a3b8', el: null, path: null      },
+    evDot:    { progress: 0.0, speed: 0.3, direction: 1, active: false, color: '#00B0E4', el: null, path: null      },
+  };
+
+  let rafLastTime = 0;
+
+  function rafAnimate(timestamp) {
+    const dt = rafLastTime ? (timestamp - rafLastTime) / 1000 : 0;
+    rafLastTime = timestamp;
+
+    for (const dot of Object.values(dots)) {
+      if (!dot.el || !dot.path) continue;
+      if (!dot.active) {
+        dot.el.setAttribute('opacity', '0');
+        continue;
+      }
+      dot.el.setAttribute('opacity', '0.9');
+      dot.el.setAttribute('fill', dot.color);
+
+      dot.progress += dot.speed * dot.direction * dt;
+      if (dot.progress > 1) dot.progress -= 1;
+      if (dot.progress < 0) dot.progress += 1;
+
+      const pos = interpolatePath(dot.path, dot.progress);
+      dot.el.setAttribute('cx', pos.x);
+      dot.el.setAttribute('cy', pos.y);
+    }
+
+    requestAnimationFrame(rafAnimate);
+  }
+
+  function initDots() {
+    dots.gridDot1.el = $('ems-dot-grid');
+    dots.gridDot2.el = $('ems-dot-grid2');
+    dots.solarDot.el = $('ems-dot-solar');
+    dots.battDot.el  = $('ems-dot-batt');
+    dots.bldDot.el   = $('ems-dot-bld');
+    dots.evDot.el    = $('ems-dot-ev');
+
+    const bldEl = $('ems-fl-bld');
+    const evEl  = $('ems-fl-ev');
+    bldPath = bldEl ? samplePath(bldEl, 20) : [{ x: 600, y: 195 }, { x: 755, y: 110 }];
+    evPath  = evEl  ? samplePath(evEl, 20)  : [{ x: 600, y: 230 }, { x: 755, y: 320 }];
+    dots.bldDot.path = bldPath;
+    dots.evDot.path  = evPath;
+
+    requestAnimationFrame(rafAnimate);
+  }
+
+  function updateDots(d) {
+    const grid     = d.grid_kw    || 0;
+    const solar    = d.solar_kw   || 0;
+    const battKw   = (d.battery_power_w != null ? d.battery_power_w : ((d.battery_kw || 0) * 1000)) / 1000;
+    const building = d.building_kw || 0;
+    const ev       = d.ev_total_kw != null ? d.ev_total_kw : (d.charging_kw || 0);
+
+    // Grid: import=forward (+1), export=reverse (-1)
+    const gridActive = Math.abs(grid) > 0.5;
+    dots.gridDot1.active    = gridActive;
+    dots.gridDot2.active    = gridActive;
+    dots.gridDot1.direction = grid >= 0 ? 1 : -1;
+    dots.gridDot2.direction = grid >= 0 ? 1 : -1;
+    dots.gridDot1.speed     = kwToSpeed(Math.abs(grid));
+    dots.gridDot2.speed     = kwToSpeed(Math.abs(grid));
+    dots.gridDot1.color     = grid >= 0 ? '#10b981' : '#ef4444';
+    dots.gridDot2.color     = grid >= 0 ? '#10b981' : '#ef4444';
+
+    // Solar: always forward (top→down)
+    dots.solarDot.active    = solar > 0.5;
+    dots.solarDot.direction = 1;
+    dots.solarDot.speed     = kwToSpeed(solar);
+    dots.solarDot.color     = '#fbbf24';
+
+    // Battery: charging (battKw<0)=forward, discharging (battKw>0)=reverse
+    dots.battDot.active    = Math.abs(battKw) > 0.5;
+    dots.battDot.direction = battKw < 0 ? 1 : -1;
+    dots.battDot.speed     = kwToSpeed(Math.abs(battKw));
+    dots.battDot.color     = battKw < 0 ? '#f59e0b' : '#10b981';
+
+    // Building: always forward
+    dots.bldDot.active    = building > 0.5;
+    dots.bldDot.direction = 1;
+    dots.bldDot.speed     = kwToSpeed(building);
+    dots.bldDot.color     = '#94a3b8';
+
+    // EV: always forward
+    dots.evDot.active    = ev > 0.5;
+    dots.evDot.direction = 1;
+    dots.evDot.speed     = kwToSpeed(ev);
+    dots.evDot.color     = '#00B0E4';
+  }
+
+  // ── Main update ─────────────────────────────────────────────────────────
+
+  function update(d) {
+    const grid    = d.grid_kw    || 0;
+    const solar   = d.solar_kw   || 0;
+    const ev      = d.ev_total_kw != null ? d.ev_total_kw : (d.charging_kw || 0);
+    const building = d.building_kw || 0;
+    const battW   = d.battery_power_w != null ? d.battery_power_w : ((d.battery_kw || 0) * 1000);
+    const battKw  = battW / 1000;
+    const invW    = d.inverter_power_w || 0;
+    const soc     = d.ess_soc_pct != null ? d.ess_soc_pct : d.battery_soc;
+    const available = d.available_kw || 0;
+    if (d.grid_limit_kw) LIMIT = d.grid_limit_kw;
+
+    // Derived colors
+    const gridColor  = grid >= 0 ? '#10b981' : '#ef4444';
+    const socColor   = soc == null ? '#8b5cf6' : soc < 20 ? '#ef4444' : soc < 50 ? '#f59e0b' : '#8b5cf6';
+    const solarColor = solar > 0.5 ? '#fbbf24' : '#64748b';
+    const evColor    = ev   > 0.5 ? '#00B0E4' : '#64748b';
+    const bState     = d.battery_state || (battKw < -0.5 ? 'charging' : battKw > 0.5 ? 'discharging' : 'idle');
+    const bLabel     = bState === 'charging' ? 'Charging ▼' : bState === 'discharging' ? 'Discharging ▲' : 'Idle ●';
+    const bStateColor= bState === 'discharging' ? '#10b981' : bState === 'charging' ? '#f59e0b' : '#64748b';
+    const batC       = battKw < -0.5 ? '#10b981' : battKw > 0.5 ? '#f59e0b' : '#8b5cf6';
+
+    // Summary cards
+    $('sc-grid').textContent = fmt(Math.abs(grid)) + ' kW';
+    $('sc-grid').style.color = gridColor;
+    $('sc-grid-dir').textContent = grid >= 0 ? '↓ import' : '↑ export';
+    $('sc-solar').textContent = fmt(solar);
+    $('sc-solar').style.color = solarColor;
+    $('sc-soc').textContent = soc != null ? Math.round(soc) + '%' : '—%';
+    $('sc-soc').style.color = socColor;
+    $('sc-batt-state').textContent = bLabel;
+    $('sc-ev').textContent = fmt(ev) + ' kW';
+    $('sc-ev').style.color = evColor;
+    $('sc-ev-state').textContent = ev > 0.5 ? 'charging' : 'no sessions';
+
+    // Grid detail
+    $('ems-grid-value').innerHTML = `${fmt(Math.abs(grid))} <span style="font-size:12px;color:#64748b;">kW</span>`;
+    $('ems-grid-value').style.color = gridColor;
+    $('ems-grid-dir').textContent = grid >= 0 ? '↓ import' : '↑ export';
+    $('ems-grid-card').style.borderTopColor = gridColor;
+    const util = Math.min(100, Math.abs(grid) / LIMIT * 100);
+    const utilC = util > 90 ? '#ef4444' : util > 70 ? '#f59e0b' : '#10b981';
+    $('ems-grid-bar').style.width = util + '%';
+    $('ems-grid-bar').style.background = utilC;
+    $('ems-util-pct').textContent = util.toFixed(1) + '%';
+    $('ems-util-pct').style.color = utilC;
+    $('ems-grid-limit').textContent = LIMIT + ' kW';
+
+    // Per-phase
+    sp('ems-v-l1', d.chint_v_a, 'V'); sp('ems-v-l2', d.chint_v_b, 'V'); sp('ems-v-l3', d.chint_v_c, 'V');
+    sp('ems-i-l1', d.chint_i_a, 'A', '#3b82f6'); sp('ems-i-l2', d.chint_i_b, 'A', '#3b82f6'); sp('ems-i-l3', d.chint_i_c, 'A', '#3b82f6');
+    if (d.chint_v_a && d.chint_i_a) {
+      sp('ems-w-l1', d.chint_v_a * d.chint_i_a, 'W', '#10b981');
+      sp('ems-w-l2', d.chint_v_b * d.chint_i_b, 'W', '#10b981');
+      sp('ems-w-l3', d.chint_v_c * d.chint_i_c, 'W', '#10b981');
+    }
+    if (d.frequency_hz) $('ems-freq').textContent = d.frequency_hz.toFixed(2) + ' Hz';
+
+    // Solar detail
+    $('ems-solar-value').innerHTML = `${fmt(solar)} <span style="font-size:14px;">kW</span>`;
+    $('ems-solar-value').style.color = solarColor;
+    $('ems-solar-state').textContent = solar > 0.5 ? '🌞 Producerend' : '— Idle';
+    $('ems-solar-card').style.borderTopColor = solarColor;
+    $('ems-solar-bar').style.width = Math.min(100, solar / 50 * 100) + '%';
+
+    // Battery detail
+    $('ems-batt-state').textContent = bLabel;
+    $('ems-batt-state').style.color = bStateColor;
+    $('ems-batt-power').innerHTML = `${fmt(Math.abs(battKw))} <span style="font-size:12px;color:#64748b;">kW</span>`;
+    $('ems-batt-power').style.color = socColor;
+    $('ems-batt-card').style.borderTopColor = socColor;
+    if (soc != null) {
+      const circ = 251.3, filled = (soc / 100) * circ;
+      sa('ems-soc-ring', 'stroke-dasharray', `${filled.toFixed(1)} ${(circ - filled).toFixed(1)}`);
+      sa('ems-soc-ring', 'stroke', socColor);
+      $('ems-soc-text').textContent = Math.round(soc) + '%';
+      sa('ems-soc-text', 'fill', socColor);
+      $('ems-soc-arrow').textContent = bState === 'charging' ? '▼' : bState === 'discharging' ? '▲' : '●';
+      sa('ems-soc-arrow', 'fill', bStateColor);
+    }
+    if (d.battery_voltage_v) $('ems-batt-volt').textContent = d.battery_voltage_v.toFixed(1) + ' V';
+    if (d.battery_temp_c)    $('ems-batt-temp').textContent = d.battery_temp_c.toFixed(1) + ' °C';
+
+    // EV detail
+    $('ems-ev-value').innerHTML = `${fmt(ev)} <span style="font-size:12px;">kW</span>`;
+    $('ems-ev-value').style.color = evColor;
+    $('ems-ev-state').textContent = ev > 0.5 ? 'charging' : 'no sessions';
+    $('ems-ev-profiles').innerHTML = (d.profiles || []).map(p =>
+      `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #0a1929;">
+        <span style="font-family:monospace;font-size:11px;">${p.cp}</span>
+        <span style="font-family:monospace;font-weight:700;color:#00B0E4;">${p.limit_kw} kW</span>
+      </div>`).join('');
+
+    // Building detail
+    $('ems-bld-value').innerHTML = `${fmt(building)} <span style="font-size:12px;">kW</span>`;
+    $('ems-bld-value').style.color = building > 0.5 ? '#94a3b8' : '#64748b';
+
+    // EMS Mode
+    const modeColor = d.ems_mode === 'FAILSAFE' ? '#ef4444' : d.ems_mode === 'THEATER' ? '#3b82f6' : '#10b981';
+    $('ems-mode').textContent = d.ems_mode || '—';
+    $('ems-mode').style.color = modeColor;
+    $('ems-reason').textContent = d.ems_control_reason || '';
+    $('ems-available').textContent = fmt(available) + ' kW';
+
+    // Flow lines (line styling only — dots handled by rAF)
+    const lw = kw => Math.max(2, Math.min(5, 2 + Math.abs(kw || 0) / 30 * 3));
+    const setLine = (id, active, color, w, reverse) => {
+      const e = $(id); if (!e) return;
+      e.setAttribute('stroke', active ? color : '#1e3a5f');
+      e.setAttribute('stroke-width', active ? w : '2');
+      e.setAttribute('opacity', active ? '0.85' : '0.35');
+      e.classList.remove('ems-fl-fwd', 'ems-fl-rev');
+      if (active) e.classList.add(reverse ? 'ems-fl-rev' : 'ems-fl-fwd');
+    };
+    const setTxt = (id, txt, fill) => { const e=$(id); if(!e) return; e.textContent=txt; if(fill) e.setAttribute('fill',fill); };
+
+    const gridA = Math.abs(grid) > 0.5, solarA = solar > 0.5, battA = soc != null, bldA = building > 0.5, evA = ev > 0.5;
+    setLine('ems-fl-grid',  gridA,  gridColor, lw(grid),  grid < 0);
+    setLine('ems-fl-solar', solarA, '#fbbf24', lw(solar), false);
+    setLine('ems-fl-batt',  battA,  batC,      lw(battKw), battKw > 0);
+    setLine('ems-fl-bld',   bldA,   '#94a3b8', lw(building), false);
+    setLine('ems-fl-ev',    evA,    '#00B0E4',  lw(ev), false);
+
+    // Update rAF dot state
+    updateDots(d);
+
+    setTxt('ems-fv-grid',     fmt(Math.abs(grid)) + ' kW', gridColor);
+    setTxt('ems-fv-grid-dir', grid >= 0 ? 'import' : 'export');
+    setTxt('ems-fv-solar',    fmt(solar) + ' kW', solarA ? '#fbbf24' : '#64748b');
+    const ai = Math.abs(invW);
+    setTxt('ems-fv-inv',  ai >= 1000 ? (ai/1000).toFixed(1)+' kW' : Math.round(ai)+' W');
+    setTxt('ems-fv-mode', d.ems_mode || '—', d.ems_mode === 'FAILSAFE' ? '#ef4444' : '#10b981');
+    setTxt('ems-fv-batt', fmt(Math.abs(battKw)) + ' kW', socColor);
+    setTxt('ems-fv-soc',  soc != null ? Math.round(soc) + '%' : '—%', socColor);
+    setTxt('ems-fv-bld',  fmt(building) + ' kW', bldA ? '#94a3b8' : '#475569');
+    setTxt('ems-fv-ev',   fmt(ev) + ' kW', evA ? '#00B0E4' : '#64748b');
+
+    // Live indicator
+    $('ems-live-dot').style.background = '#10b981';
+    $('ems-live-dot').style.boxShadow  = '0 0 6px #10b981';
+    $('ems-live-dot').className = 'ems-live-pulse';
+    $('ems-live-label').textContent = 'Live';
+    $('ems-live-label').style.color = '#10b981';
+    $('ems-updated').textContent = 'Updated: ' + new Date().toLocaleTimeString('en-GB');
+
+    // Spot price badge (if available)
+    var spotBadge = document.getElementById('spot-price-badge');
+    var spotVal = document.getElementById('spot-price-value');
+    if (spotBadge && d.spot_price_eur != null) {
+      var ct = (d.spot_price_eur * 100).toFixed(1).replace('.', ',');
+      var color = d.spot_price_eur < 0.10 ? '#22c55e' : d.spot_price_eur < 0.20 ? '#f59e0b' : '#ef4444';
+      spotVal.textContent = ct;
+      spotVal.style.color = color;
+      spotBadge.style.display = '';
+      spotBadge.style.borderColor = color + '44';
+    }
+  }
+
+  async function poll() {
+    try {
+      const r = await fetch(EMS_URL);
+      if (!r.ok) throw new Error(r.status);
+      update(await r.json());
+    } catch {
+      $('ems-live-dot').style.background = '#64748b';
+      $('ems-live-dot').style.boxShadow  = 'none';
+      $('ems-live-dot').className = '';
+      $('ems-live-label').textContent = 'Offline';
+      $('ems-live-label').style.color = '#64748b';
+    }
+  }
+
+  // Start rAF loop once, then begin polling
+  initDots();
+  poll();
+  setInterval(poll, 3000);
+})();
+</script>

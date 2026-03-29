@@ -1,0 +1,17 @@
+{% for cp in chargers %}
+<tr class="border-b border-gray-800 hover:bg-gray-800/50">
+    <td class="p-3 font-mono font-bold">{{ cp.id }}{% if cp.simulated %}<span class="text-xs text-yellow-500 ml-1">SIM</span>{% endif %}</td>
+    <td class="p-3">{{ cp.vendor }} {{ cp.model }}</td>
+    <td class="p-3">
+        <span class="status-{{ cp.status }}">●</span>
+        <span class="{% if cp.status == 'online' %}text-green-400{% else %}text-red-400{% endif %}">{{ cp.status }}</span>
+    </td>
+    <td class="p-3">{{ cp.ocpp_version }}</td>
+    <td class="p-3 text-gray-400 text-xs">{{ cp.last_heartbeat or '—' }}</td>
+    <td class="p-3 text-right space-x-1">
+        <button hx-post="/action/start/{{ cp.id }}" hx-swap="outerHTML" class="px-2 py-1 bg-green-700 rounded text-xs hover:bg-green-600">▶</button>
+        <button hx-post="/action/stop/{{ cp.id }}" hx-swap="outerHTML" class="px-2 py-1 bg-yellow-700 rounded text-xs hover:bg-yellow-600">⏹</button>
+        <button hx-post="/action/reset/{{ cp.id }}" hx-swap="outerHTML" class="px-2 py-1 bg-blue-700 rounded text-xs hover:bg-blue-600">↻</button>
+    </td>
+</tr>
+{% endfor %}

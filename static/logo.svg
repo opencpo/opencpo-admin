@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 110">
+  <defs>
+    <style>
+      .text { 
+        font-family: 'Arial Black', 'Helvetica Neue', Helvetica, Arial, sans-serif; 
+        font-weight: 900; 
+        font-size: 72px;
+        fill: #7CB82F;
+      }
+    </style>
+  </defs>
+  
+  <!-- STR text -->
+  <text x="8" y="80" class="text">STR</text>
+  
+  <!-- Interlocking circles using arcs for proper layering -->
+  <g transform="translate(180, 55)" fill="none" stroke-width="11">
+    
+    <!-- Green circle: bottom half (behind blue) -->
+    <path d="M -28 0 A 30 30 0 0 0 32 0" stroke="#7CB82F"/>
+    
+    <!-- Blue circle: complete -->
+    <circle cx="36" cy="0" r="30" stroke="#00A3D9"/>
+    
+    <!-- Green circle: top half (in front of blue) -->
+    <path d="M 32 0 A 30 30 0 0 0 -28 0" stroke="#7CB82F"/>
+    
+  </g>
+  
+  <!-- MLIJNEN text -->
+  <text x="282" y="80" class="text">MLIJNEN</text>
+</svg>

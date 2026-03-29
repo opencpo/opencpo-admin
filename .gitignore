@@ -1,0 +1,26 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.env
+*.log
+.DS_Store
+
+# PKI data (certs, keys — never commit)
+data/
+
+# Database files
+*.db
+*.sqlite3
+
+# Editor / IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Build artifacts
+*.egg-info/
+dist/
+build/
