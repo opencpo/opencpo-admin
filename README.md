@@ -111,7 +111,6 @@ The UI supports swappable skins via the `skins/` directory.
 ```
 skins/
   base/          ← generic default skin
-  stroomlijnen/  ← example branded skin
 ```
 
 The `logo.svg` in `static/` is the primary branding asset (generic OpenCPO lightning bolt). Replace `static/logo.png` with your own PNG logo; it is not generated automatically.
@@ -122,7 +121,7 @@ Set `SKIN=base` (default) to use the generic skin. To use a custom skin:
 2. Edit colors, logo, and CSS in your skin directory
 3. Set `SKIN=my-brand` in your `.env`
 
-The `stroomlijnen/` skin is included as a reference example.
+Copy `skins/base/` as a starting point for your own branded skin.
 
 ---
 
