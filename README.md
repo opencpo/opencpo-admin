@@ -4,6 +4,8 @@
 
 FastAPI + Jinja2 + HTMX. No React, no npm, no build step.
 
+> ⚠️ **No built-in authentication.** Deploy behind a reverse proxy (nginx/Caddy) with mTLS or basic auth. Do not expose to the public internet without authentication.
+
 ---
 
 ## Features
@@ -111,6 +113,8 @@ skins/
   base/          ← generic default skin
   stroomlijnen/  ← example branded skin
 ```
+
+The `logo.svg` in `static/` is the primary branding asset (generic OpenCPO lightning bolt). Replace `static/logo.png` with your own PNG logo; it is not generated automatically.
 
 Set `SKIN=base` (default) to use the generic skin. To use a custom skin:
 

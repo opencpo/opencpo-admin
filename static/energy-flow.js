@@ -1,5 +1,5 @@
 /**
- * Stroomlijnen Energy Flow Diagram — Shared Component
+ * OpenCPO Energy Flow Diagram — Shared Component
  * initEnergyFlow(containerId, dataUrl, options)
  *
  * options: {
@@ -73,7 +73,7 @@
   <!-- ── Node: Inverter / Hub (center) ── -->
   <rect x="328" y="175" width="264" height="80" rx="10" fill="#0d2137" stroke="#00B0E4" stroke-opacity="0.5"/>
   <text x="460" y="200" text-anchor="middle" fill="#00B0E4"
-    font-size="9" font-family="monospace" font-weight="700">INVERTER · Afore AF50K-TH</text>
+    font-size="9" font-family="monospace" font-weight="700">INVERTER</text>
   <text id="fv-inv-${id}"  x="400" y="232" text-anchor="middle" fill="#e2e8f0"
     font-size="18" font-family="monospace" font-weight="700">0 W</text>
   <text id="fv-mode-${id}" x="536" y="232" text-anchor="middle" fill="#10b981"

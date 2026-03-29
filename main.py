@@ -4,6 +4,7 @@ CPO Admin — Network management dashboard.
 FastAPI + Jinja2 + HTMX. No React, no npm, no build step.
 Consumes OCPP Core via REST API + Redis for live data.
 """
+import html
 import os
 import logging
 from contextlib import asynccontextmanager
@@ -263,7 +264,7 @@ async def tariff_edit_partial(request: Request, tariff_id: str):
 
     return HTMLResponse(f'''
     <div class="flex justify-between items-center mb-5 border-b border-gray-800 pb-4">
-        <h3 class="font-semibold text-gray-100">✏️ Edit {t["name"]}</h3>
+        <h3 class="font-semibold text-gray-100">✏️ Edit {html.escape(t["name"])}</h3>
         <button onclick="closeModal('modal-edit')" class="text-gray-500 hover:text-gray-300 text-xl">✕</button>
     </div>
     <form hx-post="/action/tariff/update/{t["id"]}"
@@ -273,7 +274,7 @@ async def tariff_edit_partial(request: Request, tariff_id: str):
         <div class="grid grid-cols-2 gap-4">
             <div class="col-span-2">
                 <label class="block text-xs text-gray-400 mb-1">Name</label>
-                <input name="name" value="{t.get("name","")}" required
+                <input name="name" value="{html.escape(t.get("name",""))}" required
                     class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm">
             </div>
             <div>
@@ -359,7 +360,7 @@ async def action_tariff_create(request: Request):
             <script>setTimeout(() => { closeModal('modal-create'); location.reload(); }, 1200);</script>
         ''')
     except Exception as e:
-        return HTMLResponse(f'<div class="p-3 bg-red-900/50 border border-red-800 rounded text-red-300 text-sm">Error: {e}</div>')
+        return HTMLResponse(f'<div class="p-3 bg-red-900/50 border border-red-800 rounded text-red-300 text-sm">Error: {html.escape(str(e))}</div>')
 
 
 @app.post("/action/tariff/update/{tariff_id}", response_class=HTMLResponse)
@@ -387,7 +388,7 @@ async def action_tariff_update(request: Request, tariff_id: str):
             <script>setTimeout(() => { closeModal('modal-edit'); location.reload(); }, 1200);</script>
         ''')
     except Exception as e:
-        return HTMLResponse(f'<div class="p-3 bg-red-900/50 border border-red-800 rounded text-red-300 text-sm">Error: {e}</div>')
+        return HTMLResponse(f'<div class="p-3 bg-red-900/50 border border-red-800 rounded text-red-300 text-sm">Error: {html.escape(str(e))}</div>')
 
 
 @app.post("/action/tariff/delete/{tariff_id}", response_class=HTMLResponse)
@@ -402,7 +403,7 @@ async def action_tariff_delete(request: Request, tariff_id: str):
             <script>setTimeout(() => { closeModal('modal-edit'); location.reload(); }, 1200);</script>
         ''')
     except Exception as e:
-        return HTMLResponse(f'<div class="p-3 bg-red-900/50 border border-red-800 rounded text-red-300 text-sm">Error: {e}</div>')
+        return HTMLResponse(f'<div class="p-3 bg-red-900/50 border border-red-800 rounded text-red-300 text-sm">Error: {html.escape(str(e))}</div>')
 
 
 @app.post("/action/charger/assign-tariff/{cp_id}", response_class=HTMLResponse)
@@ -459,7 +460,7 @@ async def action_charger_create(request: Request):
             <script>setTimeout(() => { closeModal('modal-charger-create'); location.reload(); }, 1200);</script>
         ''')
     except Exception as e:
-        return HTMLResponse(f'<div class="p-3 bg-red-900/50 border border-red-800 rounded text-red-300 text-sm">Error: {e}</div>')
+        return HTMLResponse(f'<div class="p-3 bg-red-900/50 border border-red-800 rounded text-red-300 text-sm">Error: {html.escape(str(e))}</div>')
 
 
 @app.post("/action/charger/update/{cp_id}", response_class=HTMLResponse)
@@ -489,7 +490,7 @@ async def action_charger_update(request: Request, cp_id: str):
             <script>setTimeout(() => { closeModal('modal-charger-edit'); location.reload(); }, 1200);</script>
         ''')
     except Exception as e:
-        return HTMLResponse(f'<div class="p-3 bg-red-900/50 border border-red-800 rounded text-red-300 text-sm">Error: {e}</div>')
+        return HTMLResponse(f'<div class="p-3 bg-red-900/50 border border-red-800 rounded text-red-300 text-sm">Error: {html.escape(str(e))}</div>')
 
 
 @app.post("/action/charger/delete/{cp_id}", response_class=HTMLResponse)
@@ -504,7 +505,7 @@ async def action_charger_delete(request: Request, cp_id: str):
             <script>setTimeout(() => location.reload(), 1200);</script>
         ''')
     except Exception as e:
-        return HTMLResponse(f'<div class="p-3 bg-red-900/50 border border-red-800 rounded text-red-300 text-sm">Error: {e}</div>')
+        return HTMLResponse(f'<div class="p-3 bg-red-900/50 border border-red-800 rounded text-red-300 text-sm">Error: {html.escape(str(e))}</div>')
 
 
 @app.post("/action/charger/purge-virtual", response_class=HTMLResponse)
@@ -520,7 +521,7 @@ async def action_charger_purge_virtual(request: Request):
             <script>setTimeout(() => location.reload(), 1500);</script>
         ''')
     except Exception as e:
-        return HTMLResponse(f'<div class="p-3 bg-red-900/50 border border-red-800 rounded text-red-300 text-sm">Error: {e}</div>')
+        return HTMLResponse(f'<div class="p-3 bg-red-900/50 border border-red-800 rounded text-red-300 text-sm">Error: {html.escape(str(e))}</div>')
 
 
 @app.get("/rfid", response_class=HTMLResponse)
@@ -821,7 +822,7 @@ async def action_token_create(request: Request):
         await api("/tokens", method="POST", json=body)
         return HTMLResponse('<div class="p-2 bg-green-900/50 text-green-300 rounded text-sm">✅ Token created</div><script>setTimeout(()=>{closeModal("modal-create");location.reload()},1200)</script>')
     except Exception as e:
-        return HTMLResponse(f'<div class="p-2 bg-red-900/50 text-red-300 rounded text-sm">Error: {e}</div>')
+        return HTMLResponse(f'<div class="p-2 bg-red-900/50 text-red-300 rounded text-sm">Error: {html.escape(str(e))}</div>')
 
 
 @app.put("/action/token/update/{token_id}", response_class=HTMLResponse)
@@ -841,7 +842,7 @@ async def action_token_update_v2(request: Request, token_id: str):
         await api(f"/tokens/{token_id}", method="PUT", json=body)
         return HTMLResponse('<div class="p-2 bg-green-900/50 text-green-300 rounded text-sm">✅ Saved</div>')
     except Exception as e:
-        return HTMLResponse(f'<div class="p-2 bg-red-900/50 text-red-300 rounded text-sm">Error: {e}</div>')
+        return HTMLResponse(f'<div class="p-2 bg-red-900/50 text-red-300 rounded text-sm">Error: {html.escape(str(e))}</div>')
 
 
 @app.post("/action/token/block/{token_id}", response_class=HTMLResponse)
@@ -852,7 +853,7 @@ async def action_token_block(request: Request, token_id: str):
         await api(f"/tokens/{token_id}/block", method="POST", json={"reason": reason})
         return HTMLResponse('<div class="p-2 bg-yellow-900/50 text-yellow-300 rounded text-sm">🚫 Token blocked</div><script>setTimeout(()=>location.reload(),1000)</script>')
     except Exception as e:
-        return HTMLResponse(f'<div class="p-2 bg-red-900/50 text-red-300 rounded text-sm">Error: {e}</div>')
+        return HTMLResponse(f'<div class="p-2 bg-red-900/50 text-red-300 rounded text-sm">Error: {html.escape(str(e))}</div>')
 
 
 @app.post("/action/token/unblock/{token_id}", response_class=HTMLResponse)
@@ -861,7 +862,7 @@ async def action_token_unblock(request: Request, token_id: str):
         await api(f"/tokens/{token_id}/unblock", method="POST")
         return HTMLResponse('<div class="p-2 bg-green-900/50 text-green-300 rounded text-sm">✅ Token unblocked</div><script>setTimeout(()=>location.reload(),1000)</script>')
     except Exception as e:
-        return HTMLResponse(f'<div class="p-2 bg-red-900/50 text-red-300 rounded text-sm">Error: {e}</div>')
+        return HTMLResponse(f'<div class="p-2 bg-red-900/50 text-red-300 rounded text-sm">Error: {html.escape(str(e))}</div>')
 
 
 @app.post("/action/token/replace/{token_id}", response_class=HTMLResponse)
@@ -877,7 +878,7 @@ async def action_token_replace(request: Request, token_id: str):
         new_id = result.get("new_id", "")
         return HTMLResponse(f'<div class="p-2 bg-green-900/50 text-green-300 rounded text-sm">✅ Replaced → <a href="/tokens/{new_id}" class="underline">new token</a></div><script>setTimeout(()=>location.reload(),2000)</script>')
     except Exception as e:
-        return HTMLResponse(f'<div class="p-2 bg-red-900/50 text-red-300 rounded text-sm">Error: {e}</div>')
+        return HTMLResponse(f'<div class="p-2 bg-red-900/50 text-red-300 rounded text-sm">Error: {html.escape(str(e))}</div>')
 
 
 @app.delete("/action/token/delete/{token_id}", response_class=HTMLResponse)
@@ -886,7 +887,7 @@ async def action_token_delete(request: Request, token_id: str):
         await api(f"/tokens/{token_id}", method="DELETE")
         return HTMLResponse('<div class="p-2 bg-red-900/50 text-red-300 rounded text-sm">🗑 Token revoked</div><script>setTimeout(()=>location.reload(),1000)</script>')
     except Exception as e:
-        return HTMLResponse(f'<div class="p-2 bg-red-900/50 text-red-300 rounded text-sm">Error: {e}</div>')
+        return HTMLResponse(f'<div class="p-2 bg-red-900/50 text-red-300 rounded text-sm">Error: {html.escape(str(e))}</div>')
 
 
 @app.post("/action/token/purge-test", response_class=HTMLResponse)
@@ -899,7 +900,7 @@ async def action_token_purge_test(request: Request):
         deleted = result.get("deleted", 0)
         return HTMLResponse(f'<div class="p-2 bg-yellow-900/50 text-yellow-300 rounded text-sm">🗑 {deleted} test tokens removed</div><script>setTimeout(()=>location.reload(),1500)</script>')
     except Exception as e:
-        return HTMLResponse(f'<div class="p-2 bg-red-900/50 text-red-300 rounded text-sm">Error: {e}</div>')
+        return HTMLResponse(f'<div class="p-2 bg-red-900/50 text-red-300 rounded text-sm">Error: {html.escape(str(e))}</div>')
 
 
 # ── Group HTMX actions ───────────────────────────────────────────────────────
@@ -918,7 +919,7 @@ async def action_group_create(request: Request):
         await api("/groups", method="POST", json=body)
         return HTMLResponse('<div class="p-2 bg-green-900/50 text-green-300 rounded text-sm">✅ Group created</div>')
     except Exception as e:
-        return HTMLResponse(f'<div class="p-2 bg-red-900/50 text-red-300 rounded text-sm">Error: {e}</div>')
+        return HTMLResponse(f'<div class="p-2 bg-red-900/50 text-red-300 rounded text-sm">Error: {html.escape(str(e))}</div>')
 
 
 @app.put("/action/group/update/{group_id}", response_class=HTMLResponse)
@@ -933,7 +934,7 @@ async def action_group_update(request: Request, group_id: str):
         await api(f"/groups/{group_id}", method="PUT", json=body)
         return HTMLResponse('<div class="p-2 bg-green-900/50 text-green-300 rounded text-sm">✅ Saved</div>')
     except Exception as e:
-        return HTMLResponse(f'<div class="p-2 bg-red-900/50 text-red-300 rounded text-sm">Error: {e}</div>')
+        return HTMLResponse(f'<div class="p-2 bg-red-900/50 text-red-300 rounded text-sm">Error: {html.escape(str(e))}</div>')
 
 
 @app.delete("/action/group/delete/{group_id}", response_class=HTMLResponse)
@@ -942,7 +943,7 @@ async def action_group_delete(request: Request, group_id: str):
         await api(f"/groups/{group_id}", method="DELETE")
         return HTMLResponse('<div class="p-2 bg-yellow-900/50 text-yellow-300 rounded text-sm">🗑 Group deleted</div><script>setTimeout(()=>location.reload(),1000)</script>')
     except Exception as e:
-        return HTMLResponse(f'<div class="p-2 bg-red-900/50 text-red-300 rounded text-sm">Error: {e}</div>')
+        return HTMLResponse(f'<div class="p-2 bg-red-900/50 text-red-300 rounded text-sm">Error: {html.escape(str(e))}</div>')
 
 
 @app.get("/pki", response_class=HTMLResponse)
@@ -1239,7 +1240,7 @@ async def action_issue_secc(request: Request):
         return HTMLResponse(f'''
             <div class="p-3 bg-green-900/50 border border-green-800 rounded text-green-300 text-sm"
                  hx-swap-oob="true" id="issue-result">
-                ✓ SECC cert issued for <span class="font-mono">{charge_point_id}</span>
+                ✓ SECC cert issued for <span class="font-mono">{html.escape(charge_point_id)}</span>
                 — serial: <span class="font-mono">{serial}…</span>
             </div>
             <script>
@@ -1250,7 +1251,7 @@ async def action_issue_secc(request: Request):
             </script>
         ''')
     except Exception as e:
-        return HTMLResponse(f'<div class="p-3 bg-red-900/50 border border-red-800 rounded text-red-300 text-sm">Error: {e}</div>')
+        return HTMLResponse(f'<div class="p-3 bg-red-900/50 border border-red-800 rounded text-red-300 text-sm">Error: {html.escape(str(e))}</div>')
 
 
 @app.post("/action/pki/issue-contract", response_class=HTMLResponse)
@@ -1267,13 +1268,13 @@ async def action_issue_contract(request: Request):
         serial = result.get("serial", "")[:16]
         return HTMLResponse(f'''
             <div class="p-3 bg-green-900/50 border border-green-800 rounded text-green-300 text-sm">
-                ✓ Contract cert issued for <span class="font-mono">{emaid}</span>
+                ✓ Contract cert issued for <span class="font-mono">{html.escape(emaid)}</span>
                 — serial: <span class="font-mono">{serial}…</span>
             </div>
             <script>showToast('Contract certificate issued', 'success');</script>
         ''')
     except Exception as e:
-        return HTMLResponse(f'<div class="p-3 bg-red-900/50 border border-red-800 rounded text-red-300 text-sm">Error: {e}</div>')
+        return HTMLResponse(f'<div class="p-3 bg-red-900/50 border border-red-800 rounded text-red-300 text-sm">Error: {html.escape(str(e))}</div>')
 
 
 @app.post("/action/pki/issue-user", response_class=HTMLResponse)
@@ -1293,7 +1294,7 @@ async def action_issue_user(request: Request):
         password = result.get("p12_password", "")
         return HTMLResponse(f'''
             <div class="p-4 bg-green-900/50 border border-green-800 rounded text-sm space-y-2">
-                <div class="text-green-300 font-medium">✓ User certificate issued for {email}</div>
+                <div class="text-green-300 font-medium">✓ User certificate issued for {html.escape(email)}</div>
                 <div class="text-gray-300">Serial: <span class="font-mono">{serial}…</span></div>
                 <div class="p-2 bg-yellow-900/30 border border-yellow-800 rounded text-yellow-300">
                     ⚠️ PKCS#12 password (save this now — shown once):<br>
@@ -1306,7 +1307,7 @@ async def action_issue_user(request: Request):
             <script>showToast('User certificate issued', 'success');</script>
         ''')
     except Exception as e:
-        return HTMLResponse(f'<div class="p-3 bg-red-900/50 border border-red-800 rounded text-red-300 text-sm">Error: {e}</div>')
+        return HTMLResponse(f'<div class="p-3 bg-red-900/50 border border-red-800 rounded text-red-300 text-sm">Error: {html.escape(str(e))}</div>')
 
 
 @app.post("/action/pki/revoke", response_class=HTMLResponse)
@@ -1323,18 +1324,18 @@ async def action_revoke_cert(request: Request):
         await api("/pki/revoke", method="POST", json={"serial": serial, "reason": reason})
         return HTMLResponse(f'''
             <div class="p-3 bg-yellow-900/50 border border-yellow-800 rounded text-yellow-300 text-sm">
-                ✓ Certificate revoked (reason: {reason})
+                ✓ Certificate revoked (reason: {html.escape(reason)})
             </div>
             <script>
                 closeRevokeModal();
-                showToast('Certificate revoked: {reason}', 'warning');
+                showToast('Certificate revoked: {html.escape(reason)}', 'warning');
                 // Refresh cert table
                 const tbody = document.getElementById('cert-tbody');
                 if (tbody) htmx.trigger(tbody, 'refresh');
             </script>
         ''')
     except Exception as e:
-        return HTMLResponse(f'<div class="p-3 bg-red-900/50 border border-red-800 rounded text-red-300 text-sm">Error: {e}</div>')
+        return HTMLResponse(f'<div class="p-3 bg-red-900/50 border border-red-800 rounded text-red-300 text-sm">Error: {html.escape(str(e))}</div>')
 
 
 @app.get("/ocpp", response_class=HTMLResponse)
@@ -1409,7 +1410,7 @@ async def action_feature_toggle(key: str):
         flag = await api(f"/features/{key}")
         return HTMLResponse(_flag_card_html(flag))
     except Exception as e:
-        return HTMLResponse(f'<div id="flag-{key}" class="p-4 rounded-xl border border-red-800 bg-red-900/20 text-red-400 text-sm">Error: {e}</div>')
+        return HTMLResponse(f'<div id="flag-{key}" class="p-4 rounded-xl border border-red-800 bg-red-900/20 text-red-400 text-sm">Error: {html.escape(str(e))}</div>')
 
 
 # ── HTMX Partials ────────────────────────────────────────────────────────
