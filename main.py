@@ -2,15 +2,13 @@
 OpenCPO Admin — Network management dashboard.
 
 FastAPI + Jinja2 + HTMX. No React, no npm, no build step.
-Consumes OCPP Core via REST API.
+Consumes OCPP Core via REST API only — no direct DB or Redis access.
 
 Route modules live in routes/. Shared helpers in shared.py.
 """
 import os
 import logging
-from contextlib import asynccontextmanager
 
-import asyncpg
 import uvicorn
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
@@ -34,31 +32,7 @@ from routes.ocpp import router as ocpp_router
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-DB_HOST = os.getenv("DB_HOST", "127.0.0.1")
-DB_PORT = int(os.getenv("DB_PORT", "5432"))
-DB_NAME = os.getenv("DB_NAME", "ocppcore")
-DB_USER = os.getenv("DB_USER", "ocpp")
-DB_PASS = os.getenv("DB_PASS")
-if not DB_PASS:
-    raise RuntimeError("DB_PASS environment variable is required")
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Create DB pool on startup, close on shutdown."""
-    logger.info("Connecting to PostgreSQL %s@%s:%s/%s", DB_USER, DB_HOST, DB_PORT, DB_NAME)
-    app.state.db = await asyncpg.create_pool(
-        host=DB_HOST, port=DB_PORT, database=DB_NAME,
-        user=DB_USER, password=DB_PASS,
-        min_size=2, max_size=10,
-    )
-    logger.info("DB pool ready")
-    yield
-    await app.state.db.close()
-    logger.info("DB pool closed")
-
-
-app = FastAPI(title=APP_TITLE, docs_url=None, redoc_url=None, lifespan=lifespan)
+app = FastAPI(title=APP_TITLE, docs_url=None, redoc_url=None)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Register all route modules
