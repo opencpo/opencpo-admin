@@ -31,7 +31,7 @@
 <body class="h-full bg-gray-950 text-gray-100">
 <!-- Top Nav -->
 <nav style="display:flex;align-items:center;gap:4px;padding:6px 16px;background:#0a1628;border-bottom:1px solid #1e3a5f;font-size:12px;position:sticky;top:0;z-index:9999;overflow-x:auto;white-space:nowrap;">
-  <span style="color:#00B0E4;font-weight:700;font-size:13px;margin-right:12px;">⚡ {{ app_title }}</span>
+  <span style="color:#e8edf2;font-weight:600;font-size:13px;margin-right:12px;">Open<span style="color:#4a6580;">CPO</span></span>
   <a href="/" style="color:#00B0E4;text-decoration:none;padding:4px 10px;border-radius:6px;background:#00B0E422;">🔧 Admin</a>
 
 </nav>
@@ -39,9 +39,11 @@
     <div class="flex h-full">
         <!-- Sidebar -->
         <nav class="w-56 bg-brand-dark flex flex-col border-r border-gray-800">
-            <div class="p-4 border-b border-gray-700">
-                <img src="/static/logo.svg" alt="" style="height:28px;filter:drop-shadow(0 0 6px rgba(0,176,228,0.3));">
-                <span class="text-lg font-semibold ml-1">CPO Admin</span>
+            <div class="p-5 border-b border-gray-700">
+                <div style="font-size:22px;font-weight:600;letter-spacing:-0.3px;line-height:1;">
+                    <span style="color:#e8edf2;">Open</span><span style="color:#4a6580;">CPO</span>
+                </div>
+                <div style="font-size:11px;color:#4a6580;letter-spacing:1.5px;text-transform:uppercase;margin-top:6px;">Admin Panel</div>
             </div>
             <div class="flex-1 py-4">
                 <a href="/" class="nav-link block px-4 py-2 hover:bg-gray-800 {% if active == 'dashboard' %}bg-gray-800 text-brand-green{% endif %}">
