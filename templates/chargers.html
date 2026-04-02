@@ -66,10 +66,6 @@
                 <td class="p-3">{{ cp.site or '—' }}</td>
                 <td class="p-3 text-gray-400 text-xs">{{ cp.last_boot or '—' }}</td>
                 <td class="p-3 text-right space-x-1">
-                    <button hx-post="/action/start/{{ cp.id }}" hx-swap="outerHTML" title="Remote Start — begin a charging session"
-                            class="px-2 py-1 bg-green-700 rounded text-xs hover:bg-green-600">▶</button>
-                    <button hx-post="/action/stop/{{ cp.id }}" hx-swap="outerHTML" title="Remote Stop — end the active session"
-                            class="px-2 py-1 bg-yellow-700 rounded text-xs hover:bg-yellow-600">⏹</button>
                     <button hx-post="/action/reset/{{ cp.id }}" hx-swap="outerHTML" title="Reset — reboot the charger"
                             class="px-2 py-1 bg-blue-700 rounded text-xs hover:bg-blue-600">↻</button>
                     <button onclick="openEditModal('{{ cp.id }}','{{ cp.vendor }}','{{ cp.model }}','{{ cp.serial_number or '' }}','{{ cp.ocpp_version }}','{{ cp.site or '' }}')"
