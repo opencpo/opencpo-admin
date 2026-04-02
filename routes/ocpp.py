@@ -29,7 +29,12 @@ async def ocpp_page(request: Request):
 
 @router.get("/partials/ocpp-messages", response_class=JSONResponse)
 async def ocpp_messages_partial(request: Request, limit: int = 200, cp_id: str = None):
-    """Recent events for initial page load."""
+    """Recent OCPP messages — queries the ocpp_messages table directly for raw protocol data."""
+    import asyncpg
+    from shared import CORE_API_KEY
+
+    # Try the events/history API first (high-level events)
+    events = []
     try:
         qs = f"?limit={limit}"
         if cp_id:
@@ -37,7 +42,46 @@ async def ocpp_messages_partial(request: Request, limit: int = 200, cp_id: str =
         data = await api(f"/events/history{qs}")
         events = data.get("events", [])
     except Exception:
-        events = []
+        pass
+
+    # Also query raw OCPP messages from the database
+    try:
+        db = request.app.state.db
+        cp_filter = "AND charge_point = $2" if cp_id else ""
+        params = [limit]
+        if cp_id:
+            params.append(cp_id)
+        rows = await db.fetch(f"""
+            SELECT time, charge_point, direction, action, message_id, 
+                   payload::text, response::text, latency_ms
+            FROM ocpp.ocpp_messages
+            ORDER BY time DESC
+            LIMIT $1
+            {cp_filter if not cp_id else ''}
+        """, *params) if not cp_id else await db.fetch("""
+            SELECT time, charge_point, direction, action, message_id,
+                   payload::text, response::text, latency_ms
+            FROM ocpp.ocpp_messages
+            WHERE charge_point = $2
+            ORDER BY time DESC
+            LIMIT $1
+        """, limit, cp_id)
+
+        import json as _json
+        for row in reversed(rows):  # oldest first
+            events.append({
+                "type": row["action"],
+                "charge_point": row["charge_point"],
+                "timestamp": row["time"].isoformat() if row["time"] else None,
+                "direction": row["direction"],
+                "data": _json.loads(row["payload"]) if row["payload"] else {},
+                "response": _json.loads(row["response"]) if row["response"] else None,
+                "latency_ms": row["latency_ms"],
+                "message_id": row["message_id"],
+            })
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error("Failed to query ocpp_messages: %s", e)
 
     return JSONResponse({"events": events})
 

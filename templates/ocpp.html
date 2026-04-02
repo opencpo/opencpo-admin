@@ -34,25 +34,34 @@
       <select id="filter-type" onchange="applyFilters()"
         style="background:#111c2e;border:1px solid #1e3450;color:#c0cdd8;padding:6px 10px;border-radius:6px;font-size:12px;min-width:180px;">
         <option value="">All types</option>
-        <optgroup label="Charger">
-          <option value="charger.boot">charger.boot</option>
-          <option value="charger.online">charger.online</option>
-          <option value="charger.offline">charger.offline</option>
-          <option value="charger.status">charger.status</option>
-          <option value="charger.heartbeat">charger.heartbeat</option>
+        <optgroup label="Connection">
+          <option value="BootNotification">BootNotification</option>
+          <option value="Heartbeat">Heartbeat</option>
+          <option value="StatusNotification">StatusNotification</option>
+          <option value="FirmwareStatusNotification">FirmwareStatusNotification</option>
+          <option value="DiagnosticsStatusNotification">DiagnosticsStatusNotification</option>
         </optgroup>
-        <optgroup label="Session">
-          <option value="session.start">session.start</option>
-          <option value="session.meter">session.meter</option>
-          <option value="session.stop">session.stop</option>
-          <option value="session.cdr">session.cdr</option>
+        <optgroup label="Charging">
+          <option value="StartTransaction">StartTransaction</option>
+          <option value="StopTransaction">StopTransaction</option>
+          <option value="MeterValues">MeterValues</option>
         </optgroup>
-        <optgroup label="Auth">
-          <option value="auth.result">auth.result</option>
+        <optgroup label="Authorization">
+          <option value="Authorize">Authorize</option>
         </optgroup>
-        <optgroup label="Ops">
-          <option value="ops.alert">ops.alert</option>
-          <option value="pki.cert.issued">pki.cert.issued</option>
+        <optgroup label="Remote Commands">
+          <option value="RemoteStartTransaction">RemoteStartTransaction</option>
+          <option value="RemoteStopTransaction">RemoteStopTransaction</option>
+          <option value="Reset">Reset</option>
+          <option value="ChangeConfiguration">ChangeConfiguration</option>
+          <option value="GetConfiguration">GetConfiguration</option>
+          <option value="TriggerMessage">TriggerMessage</option>
+          <option value="SetChargingProfile">SetChargingProfile</option>
+          <option value="ClearChargingProfile">ClearChargingProfile</option>
+          <option value="UnlockConnector">UnlockConnector</option>
+        </optgroup>
+        <optgroup label="Data Transfer">
+          <option value="DataTransfer">DataTransfer</option>
         </optgroup>
       </select>
     </div>
@@ -164,14 +173,17 @@
   .msg-type { width: 140px; flex-shrink: 0; font-weight: 500; font-size: 11px; }
   .msg-preview { color: #4a6580; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
 
-  /* Type colors */
-  .type-boot, .type-heartbeat, .type-online, .type-offline { color: #64748b; }
-  .type-status { color: #3b82f6; }
-  .type-meter  { color: #22c55e; }
-  .type-start  { color: #eab308; }
-  .type-stop   { color: #f59e0b; }
-  .type-auth   { color: #a855f7; }
-  .type-remote { color: #f97316; }
+  /* Type colors — OCPP actions */
+  .type-BootNotification, .type-Heartbeat, .type-boot, .type-heartbeat, .type-online, .type-offline { color: #64748b; }
+  .type-StatusNotification, .type-status { color: #3b82f6; }
+  .type-MeterValues, .type-meter { color: #22c55e; }
+  .type-StartTransaction, .type-start { color: #eab308; }
+  .type-StopTransaction, .type-stop { color: #f59e0b; }
+  .type-Authorize, .type-auth { color: #a855f7; }
+  .type-RemoteStartTransaction, .type-RemoteStopTransaction, .type-Reset, .type-TriggerMessage, .type-remote { color: #f97316; }
+  .type-ChangeConfiguration, .type-GetConfiguration, .type-SetChargingProfile { color: #06b6d4; }
+  .type-DataTransfer { color: #8b5cf6; }
+  .type-FirmwareStatusNotification, .type-DiagnosticsStatusNotification { color: #6b7280; }
   .type-error, .type-alert { color: #ef4444; }
   .type-pki    { color: #f97316; }
 
@@ -562,11 +574,15 @@ function connectSSE() {
     try { addMessage(JSON.parse(e.data)); } catch {}
   };
 
-  // Named event types from the Core SSE stream
+  // Listen for both old event-bus types and raw OCPP action names
   const eventTypes = [
     'charger.boot', 'charger.online', 'charger.offline', 'charger.status', 'charger.heartbeat',
     'session.start', 'session.meter', 'session.stop', 'session.cdr',
     'auth.result', 'pki.cert.issued', 'ops.alert',
+    'BootNotification', 'Heartbeat', 'StatusNotification', 'MeterValues',
+    'StartTransaction', 'StopTransaction', 'Authorize',
+    'RemoteStartTransaction', 'RemoteStopTransaction', 'Reset',
+    'TriggerMessage', 'DataTransfer', 'FirmwareStatusNotification',
   ];
   eventTypes.forEach(type => {
     sseSource.addEventListener(type, (e) => {
