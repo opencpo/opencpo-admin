@@ -17,6 +17,16 @@ async def chargers_page(request: Request):
     })
 
 
+@router.get("/partials/charger-rows", response_class=HTMLResponse)
+async def charger_rows_partial(request: Request):
+    """HTMX partial: charger table rows (polled every 5s)."""
+    data = await api("/chargers?limit=100")
+    return templates.TemplateResponse(
+        request, "partials/charger_rows.html",
+        {"chargers": data.get("chargers", [])},
+    )
+
+
 @router.get("/remote/{cp_id}", response_class=HTMLResponse)
 async def remote_control(request: Request, cp_id: str):
     """Remote control panel for a specific charge point."""
