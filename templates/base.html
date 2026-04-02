@@ -14,6 +14,12 @@
                 extend: {
                     colors: {
                         brand: { dark: '#0C2340', green: '#84BD00', blue: '#00B0E4' }
+                    },
+                    fontSize: {
+                        'xs': ['13px', '18px'],
+                        'sm': ['15px', '22px'],
+                        'base': ['16px', '24px'],
+                        'lg': ['18px', '26px'],
                     }
                 }
             }
@@ -29,16 +35,16 @@
         .top-link { color:#6b8299; text-decoration:none; padding:5px 12px; border-radius:6px; transition: all 0.15s; }
         .top-link:hover { color:#c0cdd8; background:rgba(255,255,255,0.05); }
         .top-link.active { color:#00B0E4; background:rgba(0,176,228,0.1); }
-        .nav-item { display:block; padding:8px 20px; color:#6b8299; text-decoration:none; font-size:13px; border-left:2px solid transparent; transition: all 0.15s; }
+        .nav-item { display:block; padding:9px 20px; color:#6b8299; text-decoration:none; font-size:14px; border-left:2px solid transparent; transition: all 0.15s; }
         .nav-item:hover { color:#c0cdd8; background:rgba(255,255,255,0.03); }
         .nav-item.active { color:#e8edf2; border-left-color:#00B0E4; background:rgba(0,176,228,0.05); }
-        .nav-section { font-size:10px; color:#3d5870; text-transform:uppercase; letter-spacing:1.5px; padding:16px 20px 6px; font-weight:600; }
+        .nav-section { font-size:11px; color:#3d5870; text-transform:uppercase; letter-spacing:1.5px; padding:18px 20px 6px; font-weight:600; }
     </style>
 </head>
-<body class="h-full bg-gray-950 text-gray-100">
+<body class="h-full bg-gray-950 text-gray-100" style="font-size:15px;">
 
 <!-- Top Nav — platform-level navigation between apps -->
-<nav style="display:flex;align-items:center;gap:2px;padding:6px 16px;background:#050b14;border-bottom:1px solid #15283f;font-size:12px;position:sticky;top:0;z-index:9999;">
+<nav style="display:flex;align-items:center;gap:2px;padding:8px 16px;background:#050b14;border-bottom:1px solid #15283f;font-size:13px;position:sticky;top:0;z-index:9999;">
   <span style="color:#e8edf2;font-weight:600;font-size:14px;margin-right:20px;letter-spacing:-0.3px;">Open<span style="color:#4a6580;">CPO</span></span>
   <a href="/" class="top-link active" title="Fleet management dashboard">Admin</a>
   <a href="https://app.opencpo.io" class="top-link" title="Driver-facing charging app">Charge App</a>
