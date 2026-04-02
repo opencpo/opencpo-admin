@@ -1,0 +1,382 @@
+{% extends "base.html" %}
+{% set active = "ocpi" %}
+{% block title %}OCPI Roaming — CPO Admin{% endblock %}
+
+{% block content %}
+
+{# ── Page header ─────────────────────────────────────────────────────── #}
+<div class="flex justify-between items-start mb-4">
+  <div>
+    <h1 class="text-2xl font-bold">OCPI Roaming
+      <span class="text-gray-500 text-lg">({{ partners|length }})</span>
+    </h1>
+    <p style="color:#4a6580;font-size:13px;margin-top:4px;max-width:760px;">
+      OCPI (Open Charge Point Interface) is the protocol that connects your
+      charging network to other operators. When an eMSP (electric vehicle
+      subscription provider) sends their drivers to your chargers, they
+      authenticate via OCPI. This page manages those roaming partnerships —
+      who you trust, what tokens they have, and whether the connection is live.
+    </p>
+  </div>
+  <div class="flex gap-2 flex-shrink-0">
+    <button onclick="openModal('modal-add-partner')"
+      style="padding:6px 14px;background:#16a34a;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">
+      Add Partner
+    </button>
+  </div>
+</div>
+
+{# ── Identity + health strip ──────────────────────────────────────────── #}
+{% set identity = status.get("identity", {}) %}
+{% set partners_count = status.get("partners", {}) %}
+{% set ep_health = status.get("endpoints_health", "unknown") %}
+<div style="background:#0a1221;border:1px solid #15283f;border-radius:10px;padding:16px 20px;margin-bottom:16px;">
+  <div style="font-size:10px;color:#3d5870;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;font-weight:600;">Our OCPI Identity</div>
+  <div style="display:flex;flex-wrap:wrap;gap:24px;align-items:center;">
+    <div>
+      <div style="font-size:10px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Operator</div>
+      <div style="font-size:14px;color:#e8edf2;font-weight:600;">{{ identity.get("operator_name", "—") }}</div>
+    </div>
+    <div>
+      <div style="font-size:10px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Party ID</div>
+      <div style="font-family:monospace;font-size:14px;color:#e8edf2;">
+        {{ identity.get("country_code", "—") }} / {{ identity.get("party_id", "—") }}
+      </div>
+    </div>
+    <div>
+      <div style="font-size:10px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Role</div>
+      <div style="font-size:14px;color:#e8edf2;">{{ identity.get("role", "CPO") }}</div>
+    </div>
+    <div>
+      <div style="font-size:10px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Base URL</div>
+      <div style="font-family:monospace;font-size:12px;color:#6b8299;">{{ identity.get("base_url", "—") }}</div>
+    </div>
+    <div style="margin-left:auto;text-align:right;">
+      <div style="font-size:10px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Endpoints</div>
+      {% if ep_health == "ok" %}
+        <span style="color:#84BD00;font-size:13px;">● Responding</span>
+      {% elif ep_health == "unknown" %}
+        <span style="color:#6b8299;font-size:13px;">● Unknown</span>
+      {% else %}
+        <span style="color:#ef4444;font-size:13px;">● {{ ep_health }}</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <div style="display:flex;gap:20px;margin-top:14px;padding-top:14px;border-top:1px solid #15283f;">
+    <span style="font-size:12px;color:#4a6580;">
+      <span style="color:#84BD00;font-weight:600;">{{ partners_count.get("active", 0) }}</span> active
+    </span>
+    <span style="font-size:12px;color:#4a6580;">
+      <span style="color:#fbbf24;font-weight:600;">{{ partners_count.get("pending", 0) }}</span> pending
+    </span>
+    <span style="font-size:12px;color:#4a6580;">
+      <span style="color:#6b8299;font-weight:600;">{{ partners_count.get("suspended", 0) + partners_count.get("disabled", 0) }}</span> inactive
+    </span>
+    {% if status.get("last_sync") %}
+    <span style="font-size:12px;color:#4a6580;margin-left:auto;">
+      Last sync: <span style="color:#6b8299;">{{ status.get("last_sync", "")[:19].replace("T"," ") }}</span>
+    </span>
+    {% endif %}
+  </div>
+</div>
+
+{# ── Legend ───────────────────────────────────────────────────────────── #}
+<p style="color:#4a6580;font-size:12px;margin-bottom:8px;">
+  <span style="color:#84BD00;">● Active</span> = handshake complete, this partner can use your chargers
+  &nbsp;&middot;&nbsp;
+  <span style="color:#fbbf24;">● Pending</span> = registered but OCPI handshake not yet completed
+  &nbsp;&middot;&nbsp;
+  <span style="color:#6b8299;">● Suspended / Disabled</span> = access paused
+  &nbsp;&middot;&nbsp;
+  <strong style="color:#c0cdd8;">CPO</strong> = they run chargers too (peer network)
+  &nbsp;&middot;&nbsp;
+  <strong style="color:#c0cdd8;">eMSP</strong> = they provide subscriptions to drivers
+</p>
+
+{# ── Search ───────────────────────────────────────────────────────────── #}
+<div style="margin-bottom:12px;">
+  <input type="text" id="partner-search" placeholder="Search by name, party ID, country, role..."
+    oninput="applyFilters()"
+    style="width:100%;padding:8px 14px;background:#0d1a2e;border:1px solid #1e3450;border-radius:8px;color:#c0cdd8;font-size:13px;">
+</div>
+
+{# ── Partner table ─────────────────────────────────────────────────────── #}
+<div style="background:#0a1221;border:1px solid #15283f;border-radius:10px;overflow:hidden;">
+  <table style="width:100%;font-size:13px;border-collapse:collapse;">
+    <thead>
+      <tr style="border-bottom:1px solid #15283f;color:#3d5870;font-size:11px;text-transform:uppercase;letter-spacing:1px;">
+        <th style="text-align:left;padding:10px 14px;">Partner</th>
+        <th style="text-align:left;padding:10px 14px;">Party ID</th>
+        <th style="text-align:left;padding:10px 14px;">Role</th>
+        <th style="text-align:left;padding:10px 14px;">Status</th>
+        <th style="text-align:left;padding:10px 14px;">Token (theirs)</th>
+        <th style="text-align:left;padding:10px 14px;">Last Sync</th>
+        <th style="text-align:right;padding:10px 14px;">Actions</th>
+      </tr>
+    </thead>
+    <tbody id="partner-body">
+      {% if partners %}
+        {% for p in partners %}
+        <tr class="partner-row" style="border-bottom:1px solid #0d1b2e;"
+          data-name="{{ p.name|lower }}"
+          data-party="{{ p.party_id|lower }}"
+          data-country="{{ p.country_code|lower }}"
+          data-role="{{ p.role|lower }}"
+          data-status="{{ p.status|lower }}">
+          <td style="padding:10px 14px;">
+            <div style="color:#e8edf2;font-weight:500;">{{ p.name }}</div>
+            <div style="font-size:11px;color:#3d5870;margin-top:1px;">{{ p.country_code }}</div>
+          </td>
+          <td style="padding:10px 14px;font-family:monospace;color:#c0cdd8;">
+            {{ p.country_code }}*{{ p.party_id }}
+          </td>
+          <td style="padding:10px 14px;">
+            <span style="font-size:11px;font-weight:600;color:{% if p.role == 'CPO' %}#00B0E4{% elif p.role == 'EMSP' %}#a78bfa{% else %}#6b8299{% endif %};">
+              {{ p.role }}
+            </span>
+          </td>
+          <td style="padding:10px 14px;">
+            {% if p.status == 'active' %}
+              <span style="color:#84BD00;font-size:12px;">● Active</span>
+            {% elif p.status == 'pending' %}
+              <span style="color:#fbbf24;font-size:12px;">● Pending</span>
+            {% elif p.status == 'suspended' %}
+              <span style="color:#f97316;font-size:12px;">● Suspended</span>
+            {% else %}
+              <span style="color:#6b8299;font-size:12px;">● {{ p.status|capitalize }}</span>
+            {% endif %}
+          </td>
+          <td style="padding:10px 14px;font-family:monospace;font-size:11px;color:#4a6580;">
+            {{ p.token_b_masked or "—" }}
+          </td>
+          <td style="padding:10px 14px;font-size:11px;color:#4a6580;">
+            {{ (p.last_sync or "")[:19].replace("T"," ") or "Never" }}
+          </td>
+          <td style="padding:10px 14px;text-align:right;">
+            <div style="display:flex;gap:6px;justify-content:flex-end;align-items:center;">
+              <span id="test-result-{{ p.id }}" style="font-size:11px;color:#4a6580;min-width:60px;text-align:right;"></span>
+              <button
+                hx-post="/partials/ocpi/test/{{ p.id }}"
+                hx-target="#test-result-{{ p.id }}"
+                hx-swap="innerHTML"
+                hx-indicator="#test-spinner-{{ p.id }}"
+                style="padding:4px 10px;background:#111c2e;border:1px solid #1e3450;color:#00B0E4;border-radius:5px;font-size:11px;cursor:pointer;white-space:nowrap;"
+                title="Test connection to this partner's OCPI endpoint">
+                <span class="htmx-indicator" id="test-spinner-{{ p.id }}" style="font-size:10px;color:#4a6580;">testing…</span>
+                <span>Test</span>
+              </button>
+              {% if p.status == 'active' %}
+              <button
+                hx-post="/partials/ocpi/sync/{{ p.id }}"
+                hx-target="#test-result-{{ p.id }}"
+                hx-swap="innerHTML"
+                style="padding:4px 10px;background:#111c2e;border:1px solid #1e3450;color:#84BD00;border-radius:5px;font-size:11px;cursor:pointer;white-space:nowrap;"
+                title="Pull latest data from this partner">
+                Sync
+              </button>
+              {% endif %}
+              <button
+                onclick="openEditModal({{ p.id }}, '{{ p.name|replace("'","\\'")|e }}', '{{ p.url|e }}', '{{ p.status }}')"
+                style="padding:4px 10px;background:#111c2e;border:1px solid #1e3450;color:#6b8299;border-radius:5px;font-size:11px;cursor:pointer;"
+                title="Edit partner details">
+                Edit
+              </button>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      {% else %}
+      <tr>
+        <td colspan="7" style="padding:40px;text-align:center;color:#3d5870;font-size:13px;">
+          No roaming partners yet.
+          <br><br>
+          <span style="font-size:12px;line-height:1.7;">
+            Add a partner manually to pre-configure the record before the OCPI handshake,
+            or wait for an eMSP to initiate the handshake at your OCPI credentials endpoint.
+          </span>
+        </td>
+      </tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+
+{# ── Add Partner Modal ─────────────────────────────────────────────────── #}
+<div id="modal-add-partner" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+  <div style="background:#0a1221;border:1px solid #1e3450;border-radius:10px;padding:24px;width:100%;max-width:480px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid #15283f;">
+      <h2 style="font-size:16px;font-weight:600;color:#e8edf2;">Add Roaming Partner</h2>
+      <button onclick="closeModal('modal-add-partner')" style="color:#4a6580;background:none;border:none;font-size:18px;cursor:pointer;line-height:1;">&#x2715;</button>
+    </div>
+    <p style="font-size:12px;color:#4a6580;margin-bottom:16px;line-height:1.6;">
+      Register a partner manually. You'll receive a token to send them — once they complete
+      the OCPI handshake, the status will move from Pending to Active automatically.
+    </p>
+    <form hx-post="/action/ocpi/partner/create" hx-target="#add-partner-result" hx-swap="innerHTML">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+        <div>
+          <label style="display:block;font-size:11px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Name <span style="color:#ef4444;">*</span></label>
+          <input name="name" required placeholder="e.g. Charge Network BV"
+            style="width:100%;padding:7px 10px;background:#111c2e;border:1px solid #1e3450;border-radius:6px;color:#c0cdd8;font-size:13px;">
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Role</label>
+          <select name="role"
+            style="width:100%;padding:7px 10px;background:#111c2e;border:1px solid #1e3450;border-radius:6px;color:#c0cdd8;font-size:13px;">
+            <option value="EMSP">eMSP — subscription provider</option>
+            <option value="CPO">CPO — fellow operator</option>
+            <option value="HUB">HUB — roaming hub</option>
+          </select>
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Country Code <span style="color:#ef4444;">*</span></label>
+          <input name="country_code" required maxlength="2" placeholder="NL"
+            style="width:100%;padding:7px 10px;background:#111c2e;border:1px solid #1e3450;border-radius:6px;color:#c0cdd8;font-size:13px;font-family:monospace;text-transform:uppercase;">
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Party ID <span style="color:#ef4444;">*</span></label>
+          <input name="party_id" required maxlength="3" placeholder="ABC"
+            style="width:100%;padding:7px 10px;background:#111c2e;border:1px solid #1e3450;border-radius:6px;color:#c0cdd8;font-size:13px;font-family:monospace;text-transform:uppercase;">
+        </div>
+      </div>
+      <div style="margin-bottom:12px;">
+        <label style="display:block;font-size:11px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Their Versions URL <span style="color:#ef4444;">*</span></label>
+        <input name="url" required type="url" placeholder="https://partner.example.com/ocpi/versions"
+          style="width:100%;padding:7px 10px;background:#111c2e;border:1px solid #1e3450;border-radius:6px;color:#c0cdd8;font-size:13px;">
+        <div style="font-size:11px;color:#3d5870;margin-top:4px;">The OCPI entry-point URL they gave you — we use it to test the connection and discover their modules.</div>
+      </div>
+      <div style="margin-bottom:16px;">
+        <label style="display:block;font-size:11px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Their Token (optional)</label>
+        <input name="token_b" placeholder="Leave blank if not yet known"
+          style="width:100%;padding:7px 10px;background:#111c2e;border:1px solid #1e3450;border-radius:6px;color:#c0cdd8;font-size:13px;font-family:monospace;">
+        <div style="font-size:11px;color:#3d5870;margin-top:4px;">The token they gave you — needed to call their endpoints. Can be set after the handshake.</div>
+      </div>
+      <div id="add-partner-result" style="margin-bottom:12px;"></div>
+      <div style="display:flex;gap:10px;">
+        <button type="submit"
+          style="flex:1;padding:8px;background:#16a34a;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">
+          Register Partner
+        </button>
+        <button type="button" onclick="closeModal('modal-add-partner')"
+          style="flex:1;padding:8px;background:#111c2e;border:1px solid #1e3450;color:#6b8299;border-radius:6px;font-size:13px;cursor:pointer;">
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ── Edit / Detail Modal ───────────────────────────────────────────────── #}
+<div id="modal-partner-detail" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+  <div style="background:#0a1221;border:1px solid #1e3450;border-radius:10px;padding:24px;width:100%;max-width:480px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid #15283f;">
+      <h2 style="font-size:16px;font-weight:600;color:#e8edf2;">Edit Partner</h2>
+      <button onclick="closeModal('modal-partner-detail')" style="color:#4a6580;background:none;border:none;font-size:18px;cursor:pointer;line-height:1;">&#x2715;</button>
+    </div>
+    <form id="edit-partner-form" hx-target="#edit-partner-result" hx-swap="innerHTML">
+      <div style="margin-bottom:12px;">
+        <label style="display:block;font-size:11px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Name</label>
+        <input id="edit-name" name="name"
+          style="width:100%;padding:7px 10px;background:#111c2e;border:1px solid #1e3450;border-radius:6px;color:#c0cdd8;font-size:13px;">
+      </div>
+      <div style="margin-bottom:12px;">
+        <label style="display:block;font-size:11px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Versions URL</label>
+        <input id="edit-url" name="url" type="url"
+          style="width:100%;padding:7px 10px;background:#111c2e;border:1px solid #1e3450;border-radius:6px;color:#c0cdd8;font-size:13px;">
+      </div>
+      <div style="margin-bottom:12px;">
+        <label style="display:block;font-size:11px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Their Token</label>
+        <input id="edit-token-b" name="token_b" placeholder="Leave blank to keep current"
+          style="width:100%;padding:7px 10px;background:#111c2e;border:1px solid #1e3450;border-radius:6px;color:#c0cdd8;font-size:13px;font-family:monospace;">
+        <div style="font-size:11px;color:#3d5870;margin-top:3px;">Only fill in if updating — leave blank to keep the existing token.</div>
+      </div>
+      <div style="margin-bottom:16px;">
+        <label style="display:block;font-size:11px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Status</label>
+        <select id="edit-status" name="status"
+          style="width:100%;padding:7px 10px;background:#111c2e;border:1px solid #1e3450;border-radius:6px;color:#c0cdd8;font-size:13px;">
+          <option value="">— keep current —</option>
+          <option value="active">Active</option>
+          <option value="pending">Pending</option>
+          <option value="suspended">Suspended</option>
+          <option value="disabled">Disabled</option>
+        </select>
+      </div>
+      <div id="edit-partner-result" style="margin-bottom:12px;"></div>
+      <div style="display:flex;gap:10px;">
+        <button id="btn-delete-partner" type="button"
+          style="padding:8px 14px;background:#7f1d1d33;border:1px solid #7f1d1d;color:#fca5a5;border-radius:6px;font-size:13px;cursor:pointer;">
+          Remove
+        </button>
+        <div style="flex:1;"></div>
+        <button type="button" onclick="closeModal('modal-partner-detail')"
+          style="padding:8px 14px;background:#111c2e;border:1px solid #1e3450;color:#6b8299;border-radius:6px;font-size:13px;cursor:pointer;">
+          Cancel
+        </button>
+        <button type="submit"
+          style="padding:8px 20px;background:#00B0E4;color:#050b14;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;">
+          Save
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ── Log link ─────────────────────────────────────────────────────────── #}
+<div style="margin-top:16px;padding-top:12px;border-top:1px solid #0d1b2e;font-size:12px;color:#3d5870;">
+  <a href="/ocpi/log" style="color:#3d5870;text-decoration:none;">View OCPI request log</a>
+  &nbsp;&middot;&nbsp;
+  <span style="color:#3d5870;">OCPI versions endpoint:
+    <code style="font-family:monospace;font-size:11px;">{{ identity.get("versions_url","—") }}</code>
+  </span>
+</div>
+
+<script>
+function openModal(id) {
+  document.getElementById(id).classList.remove('hidden');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.add('hidden');
+}
+
+function openEditModal(id, name, url, status) {
+  document.getElementById('edit-name').value = name;
+  document.getElementById('edit-url').value = url;
+  document.getElementById('edit-token-b').value = '';
+  document.getElementById('edit-status').value = '';
+  document.getElementById('edit-partner-result').innerHTML = '';
+
+  const form = document.getElementById('edit-partner-form');
+  form.setAttribute('hx-post', '/action/ocpi/partner/update/' + id);
+  htmx.process(form);
+
+  const delBtn = document.getElementById('btn-delete-partner');
+  delBtn.setAttribute('hx-post', '/action/ocpi/partner/delete/' + id);
+  delBtn.setAttribute('hx-confirm', 'Remove this partner? This cannot be undone.');
+  delBtn.setAttribute('hx-target', '#edit-partner-result');
+  delBtn.setAttribute('hx-swap', 'innerHTML');
+  htmx.process(delBtn);
+
+  openModal('modal-partner-detail');
+}
+
+function applyFilters() {
+  const q = (document.getElementById('partner-search').value || '').toLowerCase();
+  let visible = 0;
+  document.querySelectorAll('.partner-row').forEach(row => {
+    const text = [row.dataset.name, row.dataset.party, row.dataset.country, row.dataset.role, row.dataset.status].join(' ');
+    const show = !q || text.includes(q);
+    row.style.display = show ? '' : 'none';
+    if (show) visible++;
+  });
+}
+
+// Close modals on backdrop click
+['modal-add-partner', 'modal-partner-detail'].forEach(id => {
+  document.getElementById(id).addEventListener('click', function(e) {
+    if (e.target === this) closeModal(id);
+  });
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,73 @@
+{% for p in partners %}
+<tr class="partner-row" style="border-bottom:1px solid #0d1b2e;"
+  data-name="{{ p.name|lower }}"
+  data-party="{{ p.party_id|lower }}"
+  data-country="{{ p.country_code|lower }}"
+  data-role="{{ p.role|lower }}"
+  data-status="{{ p.status|lower }}">
+  <td style="padding:10px 14px;">
+    <div style="color:#e8edf2;font-weight:500;">{{ p.name }}</div>
+    <div style="font-size:11px;color:#3d5870;margin-top:1px;">{{ p.country_code }}</div>
+  </td>
+  <td style="padding:10px 14px;font-family:monospace;color:#c0cdd8;">
+    {{ p.country_code }}*{{ p.party_id }}
+  </td>
+  <td style="padding:10px 14px;">
+    <span style="font-size:11px;font-weight:600;color:{% if p.role == 'CPO' %}#00B0E4{% elif p.role == 'EMSP' %}#a78bfa{% else %}#6b8299{% endif %};">
+      {{ p.role }}
+    </span>
+  </td>
+  <td style="padding:10px 14px;">
+    {% if p.status == 'active' %}
+      <span style="color:#84BD00;font-size:12px;">● Active</span>
+    {% elif p.status == 'pending' %}
+      <span style="color:#fbbf24;font-size:12px;">● Pending</span>
+    {% elif p.status == 'suspended' %}
+      <span style="color:#f97316;font-size:12px;">● Suspended</span>
+    {% else %}
+      <span style="color:#6b8299;font-size:12px;">● {{ p.status|capitalize }}</span>
+    {% endif %}
+  </td>
+  <td style="padding:10px 14px;font-family:monospace;font-size:11px;color:#4a6580;">
+    {{ p.token_b_masked or "—" }}
+  </td>
+  <td style="padding:10px 14px;font-size:11px;color:#4a6580;">
+    {{ (p.last_sync or "")[:19].replace("T"," ") or "Never" }}
+  </td>
+  <td style="padding:10px 14px;text-align:right;">
+    <div style="display:flex;gap:6px;justify-content:flex-end;align-items:center;">
+      <span id="test-result-{{ p.id }}" style="font-size:11px;color:#4a6580;min-width:60px;text-align:right;"></span>
+      <button
+        hx-post="/partials/ocpi/test/{{ p.id }}"
+        hx-target="#test-result-{{ p.id }}"
+        hx-swap="innerHTML"
+        style="padding:4px 10px;background:#111c2e;border:1px solid #1e3450;color:#00B0E4;border-radius:5px;font-size:11px;cursor:pointer;white-space:nowrap;"
+        title="Test connection to this partner's OCPI endpoint">
+        Test
+      </button>
+      {% if p.status == 'active' %}
+      <button
+        hx-post="/partials/ocpi/sync/{{ p.id }}"
+        hx-target="#test-result-{{ p.id }}"
+        hx-swap="innerHTML"
+        style="padding:4px 10px;background:#111c2e;border:1px solid #1e3450;color:#84BD00;border-radius:5px;font-size:11px;cursor:pointer;white-space:nowrap;"
+        title="Pull latest data from this partner">
+        Sync
+      </button>
+      {% endif %}
+      <button
+        onclick="openEditModal({{ p.id }}, '{{ p.name|replace("'","\\'")|e }}', '{{ p.url|e }}', '{{ p.status }}')"
+        style="padding:4px 10px;background:#111c2e;border:1px solid #1e3450;color:#6b8299;border-radius:5px;font-size:11px;cursor:pointer;"
+        title="Edit partner details">
+        Edit
+      </button>
+    </div>
+  </td>
+</tr>
+{% else %}
+<tr>
+  <td colspan="7" style="padding:40px;text-align:center;color:#3d5870;font-size:13px;">
+    No roaming partners yet.
+  </td>
+</tr>
+{% endfor %}

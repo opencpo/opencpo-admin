@@ -29,6 +29,7 @@ from routes.security import router as security_router
 from routes.onboarding import router as onboarding_router
 from routes.ocpp import router as ocpp_router
 from routes.settings import router as settings_router
+from routes.ocpi_mgmt import router as ocpi_mgmt_router
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -50,6 +51,7 @@ app.include_router(security_router)
 app.include_router(onboarding_router)
 app.include_router(ocpp_router)
 app.include_router(settings_router)
+app.include_router(ocpi_mgmt_router)
 
 
 if __name__ == "__main__":
