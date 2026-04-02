@@ -1,0 +1,300 @@
+{# Financial Incentives & Subsidies section — included by docs.html #}
+
+<details id="subsidies">
+<summary class="docs-summary">
+  <span class="docs-section-num">09</span>
+  Financial Incentives &amp; Subsidies
+  <span class="docs-badge docs-badge-green">Europe</span>
+</summary>
+<div class="docs-section-body">
+
+<p class="docs-lead">The economics of EV charging infrastructure are substantially improved by national and regional subsidy programs. A 120 kW DC charger installation that costs €80,000 all-in can become a €45,000 net investment after subsidies — and then generate recurring revenue through energy sales and CO₂ certificates from day one. This section covers verified programs available in early 2026.</p>
+
+<div class="docs-callout" style="border-color:#f59e0b;background:rgba(245,158,11,0.05);">
+  <strong style="color:#f59e0b;">Disclaimer:</strong> Information reflects programs available in early 2026. Subsidy programs change frequently — budgets are exhausted, conditions are amended, and programs close without notice. Always verify current eligibility, amounts, and deadlines directly with the relevant authority before applying or committing capital.
+</div>
+
+<!-- ROI Framework -->
+<h3 class="docs-h3">The Business Case — A Framework</h3>
+<p>Before covering individual programs, here is a practical ROI model for a public 120 kW DC fast charger installation in the Netherlands. Adjust variables for your situation:</p>
+<div class="docs-code-block"><pre><span class="docs-c-comment">— Net investment calculation —</span>
+Hardware (120 kW DC charger, dual CCS2):        €28,000
+Grid connection upgrade (3×80A → 3×160A):        €12,000
+Civil works, installation, cabling:              €15,000
+Software (OpenCPO — open source):                €    0
+───────────────────────────────────────────────────────
+Total gross investment:                          €55,000
+
+SPRILA subsidy (40% SME rate, capped):          -€22,000
+MIA tax deduction benefit (approx.):             -€8,700
+───────────────────────────────────────────────────────
+Net investment after incentives:                 €24,300
+
+<span class="docs-c-comment">— Monthly revenue (assumptions: 200 sessions, avg 30 kWh, €0.55/kWh) —</span>
+Energy revenue:     200 × 30 kWh × €0.55      = €3,300/mo
+ERE certificates:   200 × 30 kWh × €0.15/ERE  = €  900/mo
+Idle fee revenue:   (estimated)                = €  150/mo
+───────────────────────────────────────────────────────
+Gross monthly revenue:                          €4,350/mo
+Energy cost (200 × 30 kWh × €0.12/kWh):       -€  720/mo
+───────────────────────────────────────────────────────
+Net monthly contribution:                       €3,630/mo
+Simple payback on net investment:               ~7 months</pre></div>
+<p>This model is aggressive on utilization — adjust for your site. But it illustrates why a well-placed charger with full subsidy capture is not a cost center. It is a revenue asset.</p>
+
+<!-- ERE/Energy Certificates -->
+<h3 class="docs-h3">ERE — Energiebesparingscertificaten (NL)</h3>
+<p>Every kilowatt-hour delivered through a public EV charger in the Netherlands generates tradeable energy savings certificates under the ERE (Energiebesparingscertificaten) scheme. This is not a subsidy you apply for — it is an ongoing revenue stream that starts the moment your charger goes live.</p>
+<ul class="docs-list">
+  <li>Each kWh charged on a public charger generates a certificate</li>
+  <li>Certificates trade at approximately <strong>€0.15/ERE</strong> (Q1 2026 market rate, manually verified)</li>
+  <li>A 120 kW charger delivering 200 sessions/month at 30 kWh average generates ~6,000 kWh/month = <strong>~€900/month</strong> in certificate revenue at current rates</li>
+  <li>Certificates are aggregated and sold via accredited brokers — OpenCPO exports the session data required for certificate issuance</li>
+  <li>The rate fluctuates with energy policy — budget conservatively at €0.10/ERE for multi-year projections</li>
+</ul>
+
+<!-- THG Quote -->
+<h3 class="docs-h3">THG-Quote — CO₂ Certificate Revenue (Germany)</h3>
+<p>Germany's Treibhausgasminderungsquote (THG quota) is a legal mechanism that requires fuel suppliers to offset CO₂ emissions by buying certificates. EV charging operators generate these certificates by virtue of the electricity they deliver. For 2026, the mandatory quota is set at <strong>12.1%</strong> (up from 10.6% in 2025), driving increasing demand for certificates.</p>
+<ul class="docs-list">
+  <li>Applies to public chargepoints in Germany — each charging point generates certificates based on measured kWh delivered</li>
+  <li>Revenue varies by year and market conditions — do not assume a specific €/charger figure as it fluctuates significantly</li>
+  <li>Process: register your chargepoints with a THG quota service provider, they handle certification and sale, you receive payment net of their fee</li>
+  <li>Applies to both AC and DC public chargepoints</li>
+  <li>Check current rates at <strong>Umweltbundesamt</strong> (uba.de) and compare aggregator offers before committing</li>
+</ul>
+
+<!-- Horizontal rule between framework and country programs -->
+<div style="border-top:1px solid #15283f;margin:28px 0;"></div>
+<h3 class="docs-h3" style="margin-top:0;">Country Programs</h3>
+
+<!-- Netherlands -->
+<div class="docs-country-block">
+  <div class="docs-country-header">
+    <span class="docs-country-flag">🇳🇱</span>
+    <strong>Netherlands</strong>
+  </div>
+
+  <div class="docs-subsidy-card">
+    <div class="docs-subsidy-title">SPRILA — Subsidieregeling Private Laadinfrastructuur bij bedrijven</div>
+    <div class="docs-subsidy-meta">
+      <span class="docs-badge docs-badge-green">Active 2026</span>
+      <span class="docs-badge">Businesses</span>
+    </div>
+    <p>The main Dutch business subsidy for private on-site EV charging infrastructure. For 2026, AC and DC budgets have been merged into a single €60 million pool. The annual per-applicant cap (previously €350,000) has been removed.</p>
+    <div class="docs-table-wrap">
+      <table class="docs-table docs-table-compact">
+        <tr><td>Amount</td><td>Up to <strong>40% of eligible costs</strong> for SMEs; up to <strong>20%</strong> for large enterprises. State aid rules apply.</td></tr>
+        <tr><td>Eligible costs</td><td>Charger hardware, installation, grid connection upgrades, software integration</td></tr>
+        <tr><td>Minimum charger spec</td><td>AC charger from 2×43 kW (dual socket) or DC from 100 kW; must be publicly accessible or accessible to employees</td></tr>
+        <tr><td>Application window</td><td>20 January 2026 – 18 December 2026</td></tr>
+        <tr><td>Important rule</td><td>For applications &gt;€25,000: apply <em>before</em> commissioning. For &lt;€25,000: apply within 13 weeks after installation.</td></tr>
+        <tr><td>Apply at</td><td><strong>rvo.nl/sprila-aanschaf</strong></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="docs-subsidy-card" style="margin-top:12px;">
+    <div class="docs-subsidy-title">SPULA — Subsidieregeling Publiek Toegankelijke Laadinfrastructuur</div>
+    <div class="docs-subsidy-meta">
+      <span class="docs-badge docs-badge-green">Active 2026</span>
+      <span class="docs-badge">Public charging</span>
+    </div>
+    <p>Specifically for publicly accessible charging infrastructure (open to all drivers, not just employees). Minimum application is €25,000. Suitable for CPOs installing public fast chargers on semi-public sites (parking garages, retail, hospitality).</p>
+    <div class="docs-table-wrap">
+      <table class="docs-table docs-table-compact">
+        <tr><td>Apply at</td><td><strong>rvo.nl/spula</strong></td></tr>
+        <tr><td>English info</td><td>business.gov.nl/subsidies-and-schemes/spula</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="docs-subsidy-card" style="margin-top:12px;">
+    <div class="docs-subsidy-title">MIA / Vamil — Milieuinvesteringsaftrek</div>
+    <div class="docs-subsidy-meta">
+      <span class="docs-badge">Tax benefit</span>
+      <span class="docs-badge">Businesses</span>
+    </div>
+    <p>MIA and Vamil are Dutch tax schemes for environmental investments. Charging infrastructure that qualifies under the Milieulijst (environmental investment list) can be deducted at an enhanced rate from taxable profit, reducing your effective tax burden. Combined budget for 2026: €135M (MIA) + €20M (Vamil).</p>
+    <p>MIA allows deduction of a percentage of the investment above the standard depreciation. Vamil allows accelerated (arbitrary timing) depreciation — useful for managing tax liability. These stack with SPRILA.</p>
+    <div class="docs-table-wrap">
+      <table class="docs-table docs-table-compact">
+        <tr><td>Apply at</td><td><strong>rvo.nl/mia-vamil</strong> — application must be filed within 3 months of ordering the investment</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Germany -->
+<div class="docs-country-block" style="margin-top:20px;">
+  <div class="docs-country-header">
+    <span class="docs-country-flag">🇩🇪</span>
+    <strong>Germany</strong>
+  </div>
+  <div class="docs-subsidy-card">
+    <div class="docs-subsidy-title">KfW — Klimaschutzoffensive für Unternehmen</div>
+    <div class="docs-subsidy-meta">
+      <span class="docs-badge docs-badge-green">Active</span>
+      <span class="docs-badge">Low-interest loans</span>
+    </div>
+    <p>KfW's direct grant programs for individual chargepoints have been phased out, but the Klimaschutzoffensive (Climate Protection Offensive for Businesses) offers low-interest loans for EV charging infrastructure combined with renewable energy generation. Not a grant, but favorable financing that reduces the cost of capital for larger installations.</p>
+    <p>State-level programs remain more active: Baden-Württemberg, NRW, and Bavaria have offered grants at the Bundesland level. Check with your regional Wirtschaftsförderung (economic development agency) — these programs open and close frequently.</p>
+    <div class="docs-table-wrap">
+      <table class="docs-table docs-table-compact">
+        <tr><td>Apply at</td><td><strong>kfw.de</strong> — via your bank (Hausbank procedure)</td></tr>
+        <tr><td>State programs</td><td>Check your Bundesland's energy agency for current availability</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="docs-subsidy-card" style="margin-top:12px;">
+    <div class="docs-subsidy-title">THG-Quote — Ongoing CO₂ Certificate Revenue</div>
+    <div class="docs-subsidy-meta">
+      <span class="docs-badge docs-badge-green">Ongoing revenue</span>
+      <span class="docs-badge">Public chargepoints</span>
+    </div>
+    <p>See the THG-Quote section above. For German-market deployments, this is a material ongoing revenue stream from day one of operation — not a one-time subsidy. Register via an aggregator service: greentrax.de, wirkaufendeinethg.de, or comparable platforms.</p>
+  </div>
+</div>
+
+<!-- France -->
+<div class="docs-country-block" style="margin-top:20px;">
+  <div class="docs-country-header">
+    <span class="docs-country-flag">🇫🇷</span>
+    <strong>France</strong>
+  </div>
+  <div class="docs-subsidy-card">
+    <div class="docs-subsidy-title">ADVENIR</div>
+    <div class="docs-subsidy-meta">
+      <span class="docs-badge" style="background:rgba(239,68,68,0.1);color:#ef4444;border-color:#ef4444;">Changed Jan 2026</span>
+    </div>
+    <p>ADVENIR (funded by ADEME via EDF's CEE obligations, total budget €520M) has historically covered up to 50% of charger installation costs for businesses. As of 1 January 2026, the business charging aid component has been removed. ADVENIR remains active for residential collective installations (apartment buildings).</p>
+    <p>For commercial/CPO deployments in France in 2026, check the current ADVENIR conditions at <strong>advenir.mobi</strong> and consult ADEME directly for any replacement business programs. The French market is in transition — do not rely on ADVENIR rates from earlier years.</p>
+  </div>
+</div>
+
+<!-- UK -->
+<div class="docs-country-block" style="margin-top:20px;">
+  <div class="docs-country-header">
+    <span class="docs-country-flag">🇬🇧</span>
+    <strong>United Kingdom</strong>
+  </div>
+  <div class="docs-subsidy-card">
+    <div class="docs-subsidy-title">Workplace Charging Scheme (WCS) — OZEV</div>
+    <div class="docs-subsidy-meta">
+      <span class="docs-badge docs-badge-green">Active</span>
+      <span class="docs-badge">Businesses</span>
+    </div>
+    <p>OZEV's Workplace Charging Scheme provides grants toward the cost of installing EV chargepoints at workplaces. The grant has recently increased.</p>
+    <div class="docs-table-wrap">
+      <table class="docs-table docs-table-compact">
+        <tr><td>Amount</td><td><strong>Up to £350 per socket</strong> for installations before 1 April 2026; <strong>up to £500 per socket</strong> from 1 April 2026 onward</td></tr>
+        <tr><td>Max sockets</td><td>40 sockets per site</td></tr>
+        <tr><td>Eligible</td><td>UK businesses, charities, and public sector organisations at their premises</td></tr>
+        <tr><td>Requirement</td><td>Charger must be installed by an OZEV-approved installer</td></tr>
+        <tr><td>Apply at</td><td><strong>gov.uk/guidance/electric-vehicle-chargepoint-grants</strong></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="docs-subsidy-card" style="margin-top:12px;">
+    <div class="docs-subsidy-title">LEVI — Local Electric Vehicle Infrastructure Fund</div>
+    <div class="docs-subsidy-meta">
+      <span class="docs-badge docs-badge-blue">Local authorities</span>
+    </div>
+    <p>LEVI supports local authorities in England to develop on-street residential charging. Not directly available to private CPOs, but local authority partnerships can unlock LEVI-funded infrastructure that private CPOs then operate. Check <strong>gov.uk/levi</strong> for current guidance and partner opportunities.</p>
+  </div>
+</div>
+
+<!-- Spain -->
+<div class="docs-country-block" style="margin-top:20px;">
+  <div class="docs-country-header">
+    <span class="docs-country-flag">🇪🇸</span>
+    <strong>Spain</strong>
+  </div>
+  <div class="docs-subsidy-card">
+    <div class="docs-subsidy-title">MOVES III — Programme of Incentives for Electric Mobility</div>
+    <div class="docs-subsidy-meta">
+      <span class="docs-badge docs-badge-green">Extended — €400M</span>
+      <span class="docs-badge">Businesses + Individuals</span>
+    </div>
+    <p>MOVES III was extended in April 2025 with an additional €400 million (Royal Decree-law) after the previous extension was annulled. It covers both EV purchases and charging infrastructure deployment.</p>
+    <div class="docs-table-wrap">
+      <table class="docs-table docs-table-compact">
+        <tr><td>For businesses</td><td>Up to <strong>€2.5 million</strong> per company for charging infrastructure (percentage of eligible costs — verify current rates with IDAE)</td></tr>
+        <tr><td>For individuals</td><td>Up to 70% of home charger installation (80% in municipalities &lt;5,000 inhabitants), max €5,000</td></tr>
+        <tr><td>Administered by</td><td>IDAE (Instituto para la Diversificación y Ahorro de la Energía) via autonomous communities</td></tr>
+        <tr><td>Apply at</td><td>Your autonomous community's energy agency — applications go through regional administrations</td></tr>
+        <tr><td>Key detail</td><td>Availability and exact percentages vary by region — Catalonia and Madrid typically have additional top-up programs</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Sweden -->
+<div class="docs-country-block" style="margin-top:20px;">
+  <div class="docs-country-header">
+    <span class="docs-country-flag">🇸🇪</span>
+    <strong>Sweden</strong>
+  </div>
+  <div class="docs-subsidy-card">
+    <div class="docs-subsidy-title">Klimatklivet — Investment Support for Climate Measures</div>
+    <div class="docs-subsidy-meta">
+      <span class="docs-badge docs-badge-green">Active</span>
+      <span class="docs-badge">Businesses + Municipalities</span>
+    </div>
+    <p>Klimatklivet is Sweden's primary investment support program for climate-reducing projects, including EV charging infrastructure. Administered by the Swedish Environmental Protection Agency (Naturvårdsverket). The program is competitive — projects are evaluated on cost-effectiveness (SEK per tonne CO₂ reduced).</p>
+    <div class="docs-table-wrap">
+      <table class="docs-table docs-table-compact">
+        <tr><td>Support level</td><td>Typically <strong>30–65% of investment cost</strong>, maximum 70%</td></tr>
+        <tr><td>Eligible</td><td>Businesses, municipalities, organisations installing publicly accessible charging</td></tr>
+        <tr><td>Apply at</td><td><strong>naturvardsverket.se/klimatklivet</strong> — application rounds, check current schedule</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Norway -->
+<div class="docs-country-block" style="margin-top:20px;">
+  <div class="docs-country-header">
+    <span class="docs-country-flag">🇳🇴</span>
+    <strong>Norway</strong>
+  </div>
+  <div class="docs-subsidy-card">
+    <div class="docs-subsidy-title">Enova — Support for Fast Charging Infrastructure</div>
+    <div class="docs-subsidy-meta">
+      <span class="docs-badge docs-badge-green">Active</span>
+    </div>
+    <p>Enova (the Norwegian Energy Agency, state-owned) offers investment support for fast charging infrastructure. Norway is already the most EV-saturated market in the world — Enova's focus has shifted toward high-power and heavy vehicle charging. Check current call conditions at <strong>enova.no</strong> — the program structure changes with each round.</p>
+  </div>
+</div>
+
+<!-- Belgium, Italy, Denmark -->
+<div class="docs-country-block" style="margin-top:20px;">
+  <div class="docs-country-header" style="margin-bottom:8px;">
+    <span class="docs-country-flag">🇧🇪</span> <strong>Belgium</strong> &nbsp;·&nbsp;
+    <span class="docs-country-flag">🇮🇹</span> <strong>Italy</strong> &nbsp;·&nbsp;
+    <span class="docs-country-flag">🇩🇰</span> <strong>Denmark</strong>
+  </div>
+  <p>These markets have active support mechanisms, but the specific programs and percentages change frequently enough that we do not publish specific figures here to avoid outdated information. Check:</p>
+  <ul class="docs-list">
+    <li><strong>Belgium:</strong> Wallonie Entreprises and VREG (Flanders) for regional programs; federal tax deduction for charging infrastructure for businesses — verify current percentage with a Belgian tax advisor</li>
+    <li><strong>Italy:</strong> PNRR (Piano Nazionale di Ripresa e Resilienza) funding is channeled through municipalities and regions for public charging. Check <strong>mite.gov.it</strong> and your regional energy authority</li>
+    <li><strong>Denmark:</strong> Business tax deductions for EV charging infrastructure apply; check <strong>ens.dk</strong> (Danish Energy Agency) for current support programs</li>
+  </ul>
+</div>
+
+<!-- General guidance -->
+<div style="border-top:1px solid #15283f;margin:28px 0;"></div>
+<h3 class="docs-h3" style="margin-top:0;">Stacking Incentives — The Full Picture</h3>
+<p>The most effective subsidy strategies combine multiple mechanisms:</p>
+<ol class="docs-list">
+  <li><strong>Capital subsidy</strong> (SPRILA, MOVES, WCS) — reduces upfront investment</li>
+  <li><strong>Tax deduction</strong> (MIA/Vamil, KfW favorable financing) — reduces effective cost of capital</li>
+  <li><strong>Ongoing certificate revenue</strong> (ERE, THG-Quote) — generates recurring income from utilization</li>
+  <li><strong>Energy revenue</strong> — the core business: margin on each kWh delivered</li>
+</ol>
+<p>OpenCPO tracks session data in the format required for ERE and THG certificate issuance. Export session reports from Admin → Sessions → Export for submission to your certificate broker.</p>
+
+</div>
+</details>

@@ -1,0 +1,146 @@
+{# OCPI section — included by docs.html #}
+
+<details id="ocpi">
+<summary class="docs-summary">
+  <span class="docs-section-num">07</span>
+  OCPI Roaming — Connecting to Other Networks
+  <span class="docs-badge docs-badge-blue">OCPI 2.2.1</span>
+</summary>
+<div class="docs-section-body">
+
+<p class="docs-lead">OCPI (Open Charge Point Interface) is the protocol that lets charging networks talk to each other. When a Shell Recharge subscriber drives to your chargers, OCPI is how their app knows your charger is available, how their token gets authorized, and how the session data gets back to their billing system. Without it, you're an island. With it, you're part of the European charging network.</p>
+
+<!-- OCPI Architecture Diagram -->
+<div class="docs-diagram-wrap" style="margin-bottom:28px;">
+  <div class="docs-diagram-label">OCPI Roaming — Network Topology</div>
+  <svg viewBox="0 0 820 280" style="width:100%;display:block;max-width:820px;margin:0 auto;" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="arr2" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#2d5a8a"/></marker>
+      <marker id="arr2b" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#84BD00"/></marker>
+    </defs>
+
+    <!-- Your CPO -->
+    <rect x="10" y="60" width="190" height="160" rx="10" fill="#071828" stroke="#84BD00" stroke-opacity="0.5"/>
+    <text x="105" y="82" text-anchor="middle" font-size="9" fill="#84BD00" font-family="monospace" font-weight="700">YOUR CPO</text>
+    <rect x="24" y="92"  width="162" height="22" rx="4" fill="#0d2137" stroke="#1a3a5c"/>
+    <text x="105" y="107" text-anchor="middle" font-size="8" fill="#c0cdd8">OpenCPO Backend</text>
+    <rect x="24" y="120" width="162" height="22" rx="4" fill="#0d2137" stroke="#1a3a5c"/>
+    <text x="105" y="135" text-anchor="middle" font-size="8" fill="#c0cdd8">OCPI Module: Locations</text>
+    <rect x="24" y="148" width="162" height="22" rx="4" fill="#0d2137" stroke="#1a3a5c"/>
+    <text x="105" y="163" text-anchor="middle" font-size="8" fill="#c0cdd8">OCPI Module: Tokens</text>
+    <rect x="24" y="176" width="162" height="22" rx="4" fill="#0d2137" stroke="#1a3a5c"/>
+    <text x="105" y="191" text-anchor="middle" font-size="8" fill="#c0cdd8">OCPI Module: Sessions/CDRs</text>
+    <text x="105" y="216" text-anchor="middle" font-size="7" fill="#3d5870">NL / STR  ·  party_id</text>
+
+    <!-- OCPI Protocol arrow (bidirectional) -->
+    <line x1="201" y1="140" x2="310" y2="140" stroke="#2d5a8a" stroke-width="1.5" marker-end="url(#arr2)"/>
+    <line x1="310" y1="148" x2="201" y2="148" stroke="#2d5a8a" stroke-width="1.5" marker-end="url(#arr2)"/>
+    <text x="256" y="132" text-anchor="middle" font-size="8" fill="#3d5870" font-family="monospace">OCPI 2.2.1</text>
+    <text x="256" y="160" text-anchor="middle" font-size="7" fill="#2d4a63">HTTPS/REST</text>
+
+    <!-- eMSP -->
+    <rect x="312" y="60" width="190" height="160" rx="10" fill="#071828" stroke="#00B0E4" stroke-opacity="0.5"/>
+    <text x="407" y="82" text-anchor="middle" font-size="9" fill="#00B0E4" font-family="monospace" font-weight="700">eMSP PARTNER</text>
+    <rect x="326" y="92"  width="162" height="22" rx="4" fill="#0d2137" stroke="#1a3a5c"/>
+    <text x="407" y="107" text-anchor="middle" font-size="8" fill="#c0cdd8">Shell Recharge / Fastned</text>
+    <rect x="326" y="120" width="162" height="22" rx="4" fill="#0d2137" stroke="#1a3a5c"/>
+    <text x="407" y="135" text-anchor="middle" font-size="8" fill="#c0cdd8">Token Database</text>
+    <rect x="326" y="148" width="162" height="22" rx="4" fill="#0d2137" stroke="#1a3a5c"/>
+    <text x="407" y="163" text-anchor="middle" font-size="8" fill="#c0cdd8">CDR Ingestion + Billing</text>
+    <rect x="326" y="176" width="162" height="22" rx="4" fill="#0d2137" stroke="#1a3a5c"/>
+    <text x="407" y="191" text-anchor="middle" font-size="8" fill="#c0cdd8">Network Map / App</text>
+
+    <!-- eMSP → Driver App -->
+    <line x1="503" y1="130" x2="580" y2="100" stroke="#2d5a8a" stroke-width="1.5" marker-end="url(#arr2)"/>
+    <rect x="582" y="60" width="130" height="80" rx="8" fill="#0d2137" stroke="#1a3a5c"/>
+    <text x="647" y="82" text-anchor="middle" font-size="8" fill="#00B0E4" font-weight="600">Driver App</text>
+    <text x="647" y="96" text-anchor="middle" font-size="7" fill="#3d5870">Shell Recharge app</text>
+    <text x="647" y="108" text-anchor="middle" font-size="7" fill="#3d5870">sees your charger</text>
+    <text x="647" y="120" text-anchor="middle" font-size="7" fill="#3d5870">starts session via RFID</text>
+
+    <!-- Your chargers -->
+    <line x1="105" y1="221" x2="105" y2="258" stroke="#1a3a5c" stroke-width="1.5" marker-end="url(#arr2)"/>
+    <rect x="30" y="260" width="150" height="28" rx="6" fill="#0d2137" stroke="#1a3a5c"/>
+    <text x="105" y="275" text-anchor="middle" font-size="8" fill="#84BD00">Physical Chargers (OCPP)</text>
+
+    <!-- Credentials flow -->
+    <rect x="582" y="170" width="230" height="90" rx="8" fill="#071828" stroke="#1a3a5c"/>
+    <text x="697" y="190" text-anchor="middle" font-size="8" fill="#84BD00" font-weight="600">CREDENTIAL HANDSHAKE</text>
+    <text x="697" y="205" text-anchor="middle" font-size="7" fill="#3d5870">1. GET /ocpi/versions</text>
+    <text x="697" y="217" text-anchor="middle" font-size="7" fill="#3d5870">2. GET /ocpi/2.2.1/details</text>
+    <text x="697" y="229" text-anchor="middle" font-size="7" fill="#3d5870">3. POST /ocpi/2.2.1/credentials</text>
+    <text x="697" y="241" text-anchor="middle" font-size="7" fill="#84BD00">4. Exchange tokens — live</text>
+  </svg>
+</div>
+
+<!-- Modules -->
+<h3 class="docs-h3">OCPI 2.2.1 Modules</h3>
+<div class="docs-table-wrap">
+  <table class="docs-table">
+    <thead><tr><th>Module</th><th>Direction</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><code>Credentials</code></td><td>Both</td><td>Authentication tokens and version negotiation. Done once at setup.</td></tr>
+      <tr><td><code>Locations</code></td><td>CPO → eMSP</td><td>Your charger locations, availability status, connector types. eMSP shows these on their map.</td></tr>
+      <tr><td><code>Tokens</code></td><td>eMSP → CPO</td><td>List of authorized RFID tokens for roaming drivers. Pushed or pulled depending on agreement.</td></tr>
+      <tr><td><code>Sessions</code></td><td>CPO → eMSP</td><td>Real-time session data while charging is in progress.</td></tr>
+      <tr><td><code>CDRs</code></td><td>CPO → eMSP</td><td>Charge Detail Records — final billing documents sent after session ends.</td></tr>
+      <tr><td><code>Tariffs</code></td><td>CPO → eMSP</td><td>Your pricing for roaming sessions — energy rate, idle fee, flat fee.</td></tr>
+      <tr><td><code>Commands</code></td><td>eMSP → CPO</td><td>Remote start/stop via the eMSP's app (optional).</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Push vs Pull -->
+<h3 class="docs-h3">Push vs Pull — How Data Flows</h3>
+<p>OCPI supports two synchronization modes. In practice, most deployments use push for performance:</p>
+<div class="docs-two-col">
+  <div class="docs-callout" style="border-color:#84BD00;background:rgba(132,189,0,0.04);">
+    <strong style="color:#84BD00;">Push (Preferred)</strong><br>
+    Data is sent to the partner immediately when it changes. A charger goes offline → LocationsUpdate pushed to all eMSPs within seconds. Lower latency, lower overhead. Requires your server to be reachable by partners.
+  </div>
+  <div class="docs-callout" style="border-color:#2d5a8a;background:rgba(0,176,228,0.04);">
+    <strong style="color:#00B0E4;">Pull (Fallback)</strong><br>
+    Partner polls your endpoint on a schedule (typically every 5–15 minutes). Used when push isn't available or for initial synchronization. Results in stale availability data in partner apps.
+  </div>
+</div>
+
+<!-- Registration flow -->
+<h3 class="docs-h3">Setting Up a Roaming Partner</h3>
+<ol class="docs-list">
+  <li>Navigate to <strong>OCPI Roaming</strong> in the admin sidebar.</li>
+  <li>Click <strong>Add Partner</strong>. Enter the partner's OCPI versions URL (e.g., <code>https://ocpi.shell.com/ocpi/versions</code>).</li>
+  <li>OpenCPO performs the credential handshake automatically: it fetches the versions endpoint, discovers the 2.2.1 module endpoints, then posts credentials (its own token + identity).</li>
+  <li>The partner responds with their credential token. Both sides are now authenticated.</li>
+  <li>OpenCPO immediately pushes your locations to the partner. Their drivers can see your chargers within minutes.</li>
+  <li>Set a roaming tariff: <strong>Tariffs &amp; Pricing → New Tariff → assign to OCPI partner</strong>. This is what the eMSP uses to bill their driver.</li>
+</ol>
+<p class="docs-note">The full OCPI credentials exchange (steps 2–4) takes under 30 seconds. If it fails, the OCPI log shows exactly which request failed and why — check Admin → OCPI Roaming → Log.</p>
+
+<!-- Roaming partners -->
+<h3 class="docs-h3">Major European Roaming Partners</h3>
+<p>The European market is fragmented but consolidating around a few major hubs. The ones worth integrating with first:</p>
+<div class="docs-table-wrap">
+  <table class="docs-table">
+    <thead><tr><th>Operator</th><th>Type</th><th>Coverage</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>Shell Recharge</td><td>eMSP + CPO</td><td>Pan-European</td><td>High-value subscribers, enterprise fleet focus</td></tr>
+      <tr><td>Fastned</td><td>CPO + eMSP</td><td>Netherlands, Germany, UK, BE, FR</td><td>Premium brand, HPC focus</td></tr>
+      <tr><td>Allego</td><td>CPO + eMSP</td><td>Benelux, Germany</td><td>Strong in NL public charging</td></tr>
+      <tr><td>Hubject</td><td>Roaming Hub</td><td>Pan-European</td><td>Connect once, reach 200+ networks</td></tr>
+      <tr><td>Gireve</td><td>Roaming Hub</td><td>France + Europe</td><td>French market gateway</td></tr>
+      <tr><td>e-clearing.net</td><td>Roaming Hub</td><td>Central Europe</td><td>German market hub</td></tr>
+    </tbody>
+  </table>
+</div>
+<p class="docs-note"><strong>Recommendation:</strong> Start with direct connections to 2–3 major eMSPs, then join Hubject for reach. A Hubject connection gives access to thousands of roaming tokens with a single integration.</p>
+
+<!-- Tariff management -->
+<h3 class="docs-h3">Roaming Tariffs</h3>
+<p>You set the price you charge eMSP drivers. This differs from what drivers see in the eMSP app — that's between them and their eMSP. Your tariff is the B2B wholesale rate.</p>
+<p>Typical structure: <strong>energy rate (€/kWh) + optional idle fee (€/min after X minutes)</strong>. Some operators add a flat session fee. Keep it simple — complex tariffs with time-of-day components create CDR disputes.</p>
+<div class="docs-callout">
+  <strong>Tip:</strong> Set your roaming tariff 10–20% above your public tariff to account for settlement delays and the eMSP's margin. You receive payment from the eMSP (net of their platform fee) typically 30–60 days after the session.
+</div>
+
+</div>
+</details>

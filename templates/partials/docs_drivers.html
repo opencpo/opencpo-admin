@@ -1,0 +1,322 @@
+{# Drivers, Tokens, Pricing, Charge App, Farm, API sections — included by docs.html #}
+
+<!-- ═══ RFID TOKENS ═══ -->
+<details id="rfid">
+<summary class="docs-summary">
+  <span class="docs-section-num">04</span>
+  RFID Tokens &amp; Driver Management
+  <span class="docs-badge">ISO 14443A</span>
+</summary>
+<div class="docs-section-body">
+
+<p class="docs-lead">RFID authentication is how most EV drivers start a session today — they tap a physical card on the charger's reader, the charger sends an authorization request to OpenCPO, and charging begins or is rejected within a few hundred milliseconds. Understanding the full system — from the card's UID format to the authorization flow — prevents the most common operational headaches.</p>
+
+<!-- Authorization flow diagram -->
+<div class="docs-diagram-wrap" style="margin-bottom:24px;">
+  <div class="docs-diagram-label">Authorization Flow — Driver Taps Card</div>
+  <svg viewBox="0 0 720 160" style="width:100%;display:block;max-width:720px;margin:0 auto;" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="rf-arr" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#2d5a8a"/></marker>
+      <marker id="rf-arr-g" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#84BD00"/></marker>
+      <marker id="rf-arr-r" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#ef4444"/></marker>
+    </defs>
+
+    <!-- Nodes -->
+    <rect x="10"  y="50" width="100" height="44" rx="8" fill="#0d2137" stroke="#84BD00" stroke-opacity="0.5"/>
+    <text x="60"  y="69" text-anchor="middle" font-size="8" fill="#84BD00" font-weight="600">RFID Card</text>
+    <text x="60"  y="82" text-anchor="middle" font-size="7" fill="#3d5870">NFC tap</text>
+
+    <rect x="180" y="50" width="120" height="44" rx="8" fill="#0d2137" stroke="#1a3a5c"/>
+    <text x="240" y="66" text-anchor="middle" font-size="8" fill="#c0cdd8" font-weight="600">Charger</text>
+    <text x="240" y="78" text-anchor="middle" font-size="7" fill="#3d5870">OCPP 1.6j / 2.0.1</text>
+    <text x="240" y="88" text-anchor="middle" font-size="7" fill="#3d5870">reads UID</text>
+
+    <rect x="390" y="30" width="140" height="90" rx="8" fill="#071828" stroke="#00B0E4" stroke-opacity="0.5"/>
+    <text x="460" y="52"  text-anchor="middle" font-size="8" fill="#00B0E4" font-weight="600">OpenCPO Core</text>
+    <text x="460" y="66"  text-anchor="middle" font-size="7" fill="#3d5870">1. Check token table</text>
+    <text x="460" y="78"  text-anchor="middle" font-size="7" fill="#3d5870">2. Check group status</text>
+    <text x="460" y="90"  text-anchor="middle" font-size="7" fill="#3d5870">3. Check OCPI whitelist</text>
+    <text x="460" y="102" text-anchor="middle" font-size="7" fill="#3d5870">4. Return verdict</text>
+
+    <rect x="600" y="38" width="110" height="32" rx="6" fill="#0d2137" stroke="#84BD00" stroke-opacity="0.4"/>
+    <text x="655" y="52" text-anchor="middle" font-size="8" fill="#84BD00">Accepted</text>
+    <text x="655" y="63" text-anchor="middle" font-size="7" fill="#3d5870">session starts</text>
+
+    <rect x="600" y="86" width="110" height="32" rx="6" fill="#0d2137" stroke="#ef4444" stroke-opacity="0.4"/>
+    <text x="655" y="100" text-anchor="middle" font-size="8" fill="#ef4444">Rejected</text>
+    <text x="655" y="111" text-anchor="middle" font-size="7" fill="#3d5870">blocked / unknown</text>
+
+    <!-- Arrows -->
+    <line x1="111" y1="72" x2="179" y2="72" stroke="#84BD00" stroke-opacity="0.6" stroke-width="1.5" marker-end="url(#rf-arr-g)"/>
+    <text x="145" y="67" text-anchor="middle" font-size="7" fill="#3d5870">NFC</text>
+
+    <line x1="301" y1="72" x2="388" y2="72" stroke="#2d5a8a" stroke-width="1.5" marker-end="url(#rf-arr)"/>
+    <text x="345" y="67" text-anchor="middle" font-size="7" fill="#3d5870">OCPP Authorize(UID)</text>
+
+    <line x1="531" y1="62" x2="598" y2="56" stroke="#84BD00" stroke-opacity="0.6" stroke-width="1.5" marker-end="url(#rf-arr-g)"/>
+    <line x1="531" y1="95" x2="598" y2="100" stroke="#ef4444" stroke-opacity="0.6" stroke-width="1.5" marker-end="url(#rf-arr-r)"/>
+
+    <text x="240" y="130" text-anchor="middle" font-size="7" fill="#2d4a63">Typical roundtrip: 50–200ms  ·  charger displays result immediately</text>
+  </svg>
+</div>
+
+<h3 class="docs-h3">What is an RFID Token</h3>
+<p>An RFID token is a physical NFC card — identical in form factor to a contactless bank card or hotel key. The driver holds it near the charger's NFC reader (typically the illuminated panel on the front). The reader reads the card's UID (Unique Identifier) in milliseconds and sends it to OpenCPO for authorization.</p>
+<p>Most EV charging cards use <strong>ISO 14443A</strong> — the same standard used by Mifare Classic, Mifare Desfire, and NXP cards. The UID is either 4 bytes (single-size, most common) or 7 bytes (double-size, used in newer cards), encoded as hexadecimal: <code>04:A3:B7:22</code> or <code>04:A3:B7:22:C1:09:80</code>.</p>
+
+<div class="docs-callout" style="border-color:#84BD00;background:rgba(132,189,0,0.04);">
+  <strong>Finding the UID:</strong> It's printed on the back of most charging cards. If not, use the Admin → RFID Tokens → Scan page — tap the card on any online charger and OpenCPO captures the UID from the OCPP Authorize request. No separate card reader needed.
+</div>
+
+<!-- UID formats -->
+<h3 class="docs-h3">UID Formats — Enter Them Correctly</h3>
+<div class="docs-table-wrap">
+  <table class="docs-table">
+    <thead><tr><th>Format</th><th>Example</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>Hex with colons (preferred)</td><td><code>04:A3:B7:22</code></td><td>Most readable, OpenCPO accepts this</td></tr>
+      <tr><td>Hex without separator</td><td><code>04A3B722</code></td><td>Also accepted — normalized on import</td></tr>
+      <tr><td>Hex with spaces</td><td><code>04 A3 B7 22</code></td><td>Accepted — normalized on import</td></tr>
+      <tr><td>Decimal</td><td><code>78637858</code></td><td>Some card printers use this — convert to hex first</td></tr>
+      <tr><td>7-byte (double)</td><td><code>04:A3:B7:22:C1:09:80</code></td><td>Newer cards — treat identically to 4-byte</td></tr>
+    </tbody>
+  </table>
+</div>
+<p class="docs-note">OpenCPO normalizes all UID formats to uppercase hex without separators internally. The display format in the admin uses colons for readability. When comparing UIDs, case and separators are ignored.</p>
+
+<!-- Adding tokens -->
+<h3 class="docs-h3">Adding Tokens</h3>
+<div class="docs-two-col">
+  <div>
+    <strong style="color:#c0cdd8;display:block;margin-bottom:6px;">Manual Entry</strong>
+    <p>Admin → RFID Tokens → Add Token. Enter the UID, assign a label (driver name or fleet ID), select a token group, and set the status to Active. The token is immediately available for authorization.</p>
+  </div>
+  <div>
+    <strong style="color:#c0cdd8;display:block;margin-bottom:6px;">Bulk Import</strong>
+    <p>Upload a CSV with columns <code>uid, label, group_id, status</code>. OpenCPO validates all UIDs, reports duplicates, and imports the rest atomically. Use this when onboarding a fleet of 50+ drivers — preparing the CSV takes minutes, the import is instant.</p>
+  </div>
+</div>
+<div class="docs-code-block"><pre><span class="docs-c-comment"># Bulk import CSV format</span>
+uid,label,group_id,status
+04:A3:B7:22,Alice van der Berg,fleet-acme,active
+04:F1:29:A0,Bob Janssen,fleet-acme,active
+04:CC:11:88,Visitor Card 1,,active
+04:DE:AD:F0,Old Card,,blocked</pre></div>
+
+<!-- Token lifecycle -->
+<h3 class="docs-h3">Token Lifecycle — Status Values</h3>
+<div class="docs-table-wrap">
+  <table class="docs-table">
+    <thead><tr><th>Status</th><th>Authorization result</th><th>When to use</th></tr></thead>
+    <tbody>
+      <tr><td><span style="color:#84BD00;font-weight:600;">Active</span></td><td>Accepted</td><td>Normal in-use tokens. Driver can start sessions.</td></tr>
+      <tr><td><span style="color:#ef4444;font-weight:600;">Blocked</span></td><td>Blocked</td><td>Temporarily suspended — debt, investigation, card reported lost but not yet replaced. Charger displays "Card blocked" to the driver.</td></tr>
+      <tr><td><span style="color:#f59e0b;font-weight:600;">Expired</span></td><td>Expired</td><td>Set automatically when a token's expiry date passes. Use for contract-limited access (e.g., employee access only during employment period). Charger displays "Card expired".</td></tr>
+      <tr><td><span style="color:#3d5870;font-weight:600;">Invalid</span></td><td>Invalid</td><td>Unknown UID — no record in system. This is the default for any unrecognized card tap. Displayed as "Card not recognized".</td></tr>
+    </tbody>
+  </table>
+</div>
+<p>Use <strong>Blocked</strong> rather than deleting tokens — it preserves the audit trail of past sessions. Deleted tokens lose their session history association. If an employee leaves, block the token; don't delete it.</p>
+
+<!-- Token Groups -->
+<h3 class="docs-h3">Token Groups — Fleet &amp; Department Billing</h3>
+<p>Token Groups are how you organize drivers for consolidated billing. A group might represent a company, a department within a company, a building, or any logical unit you want to bill as one entity.</p>
+<ul class="docs-list">
+  <li>Each group gets a single monthly invoice covering all sessions by tokens in the group</li>
+  <li>Groups can have their own tariff — fleet discounts, employee rates, or free charging for a specific set of drivers</li>
+  <li>A token group can be suspended (all tokens blocked) without touching individual tokens — useful when a company is late on payment</li>
+  <li>Admin → Token Groups shows total kWh, session count, and billing amount per group for any date range</li>
+</ul>
+
+<h3 class="docs-h3">Whitelist vs Online Authorization</h3>
+<div class="docs-two-col">
+  <div>
+    <strong style="color:#c0cdd8;display:block;margin-bottom:6px;">Online Authorization</strong>
+    <p>Default mode. Every tap triggers an OCPP <code>Authorize</code> request to OpenCPO. Core checks the token status in real time and returns the verdict. Requires a stable network connection between charger and server. Latency: 50–200ms from tap to charger response.</p>
+    <p><strong>Use when:</strong> You need immediate revocation capability (e.g., shared fleet where cards get lost frequently).</p>
+  </div>
+  <div>
+    <strong style="color:#c0cdd8;display:block;margin-bottom:6px;">Local Whitelist</strong>
+    <p>OpenCPO pushes the full authorized token list to the charger's local storage. The charger authorizes taps offline without contacting the server. Sessions start immediately even during a server outage or network interruption.</p>
+    <p><strong>Use when:</strong> Network reliability is uncertain (remote sites, cellular-connected chargers) or you need sub-50ms authorization. <em>Limitation:</em> Revocation takes up to the next sync interval (typically 15 minutes) to propagate.</p>
+  </div>
+</div>
+
+<!-- OCPI tokens -->
+<h3 class="docs-h3">Roaming Tokens — OCPI Integration</h3>
+<p>When you set up an OCPI roaming partner (see Section 07), their drivers' tokens appear automatically in your token database under <strong>Tokens → Source: OCPI</strong>. You don't add these manually — they're pushed by the eMSP via the OCPI Tokens module.</p>
+<p>The OCPI token flow:</p>
+<ol class="docs-list">
+  <li>eMSP driver taps their Shell Recharge card on your charger</li>
+  <li>Charger sends OCPP Authorize with the card UID</li>
+  <li>OpenCPO checks local token database — finds it under OCPI-sourced tokens</li>
+  <li>If status is ALLOWED: Accept. Session starts. OpenCPO sends a Session update and eventually a CDR back to Shell via OCPI.</li>
+  <li>Shell bills their driver. You receive payment from Shell at the agreed roaming tariff.</li>
+</ol>
+<p class="docs-note">OCPI tokens are read-only in your admin. You can see them (and why a specific tap was accepted or rejected), but you can't modify them — the eMSP owns their token data. If a roaming driver reports they can't charge, check Admin → OCPI → Token Lookup to see the token's current status as pushed by their eMSP.</p>
+
+<!-- Best practices -->
+<h3 class="docs-h3">Operational Best Practices</h3>
+<ul class="docs-list">
+  <li><strong>One card per driver, not one card per car.</strong> Cards are personal — they tie sessions to an individual for billing and audit purposes. Multiple drivers sharing one card makes billing reconciliation difficult.</li>
+  <li><strong>Maintain a pool of visitor cards.</strong> Keep 5–10 unassigned active tokens for guests, contractors, and new employees before their permanent card arrives. Label them "Visitor-01" through "Visitor-10" and check them back in after use.</li>
+  <li><strong>Emergency override tokens.</strong> Issue 2–3 tokens with a dedicated group flagged as "override" — these bypass tariff rules and have no expiry. Keep physical copies in a secure location for infrastructure emergencies when the main system is unreachable.</li>
+  <li><strong>Set expiry dates for contractor access.</strong> When onboarding temporary staff, set a token expiry matching their contract end date. No manual cleanup needed — the token expires automatically.</li>
+  <li><strong>Audit monthly.</strong> Export the token list quarterly and cross-reference with active personnel. Departed employees' cards are a common source of unauthorized usage.</li>
+</ul>
+
+</div>
+</details>
+
+<!-- ═══ PRICING ═══ -->
+<details id="pricing">
+<summary class="docs-summary">
+  <span class="docs-section-num">03</span>
+  Tariffs &amp; Pricing
+</summary>
+<div class="docs-section-body">
+
+<p class="docs-lead">Tariffs in OpenCPO are composable — you build a tariff from individual components, then assign it to chargers or token groups. The same charger can have different tariffs for different driver groups: one rate for fleet drivers, another for the public, a third for employees charging for free.</p>
+
+<h3 class="docs-h3">Tariff Components</h3>
+<div class="docs-table-wrap">
+  <table class="docs-table">
+    <thead><tr><th>Component</th><th>Unit</th><th>Example</th><th>When to Use</th></tr></thead>
+    <tbody>
+      <tr><td>Energy rate</td><td>€/kWh</td><td>€0.35/kWh</td><td>Always include this — it's the primary revenue driver</td></tr>
+      <tr><td>Time rate (session)</td><td>€/min</td><td>€0.04/min</td><td>Adds predictability for slow AC chargers where session time varies widely</td></tr>
+      <tr><td>Idle fee</td><td>€/min after grace period</td><td>€0.10/min after 5 min</td><td>DC chargers — discourages occupancy after session ends. Set 5–10 min grace.</td></tr>
+      <tr><td>Flat connection fee</td><td>€/session</td><td>€0.50/session</td><td>Covers transaction costs on low-kWh sessions (e.g., top-up charging)</td></tr>
+      <tr><td>Minimum charge</td><td>€/session</td><td>€1.00 minimum</td><td>Protects revenue on very short sessions</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<p>A typical public DC fast charging tariff: <strong>€0.55/kWh + €0.50 connection fee + €0.10/min idle after 5 min</strong>. This covers energy cost plus margin, recovers some overhead per session, and actively discourages charger hogging without punishing normal charging behaviour.</p>
+
+<div class="docs-callout">
+  <strong>Fleet pricing:</strong> Fleet contracts typically run on energy-only rates with no idle fee — fleet vehicles are managed assets and occupancy is less of an issue. Consider €0.25–0.35/kWh for fleet, negotiated annually. The margin is lower but the volume is predictable.
+</div>
+
+</div>
+</details>
+
+<!-- ═══ CHARGE APP ═══ -->
+<details id="chargeapp">
+<summary class="docs-summary">
+  <span class="docs-section-num">09</span>
+  The Charge App — Driver-Facing PWA
+</summary>
+<div class="docs-section-body">
+
+<p class="docs-lead">The Charge App is a Progressive Web App (PWA) — drivers add it to their phone's home screen once and it behaves like a native app, without any app store. It handles QR code scanning, OTP authentication, live session tracking, and receipt delivery.</p>
+
+<h3 class="docs-h3">Features</h3>
+<ul class="docs-list">
+  <li><strong>QR scan to charge:</strong> Each charger has a unique QR code. Driver scans it, app shows charger status and tariff, driver starts session. No account needed for one-off sessions.</li>
+  <li><strong>OTP authentication:</strong> Driver enters phone number → receives SMS code → authenticated. Session tied to phone number for receipts. Faster than RFID for new users.</li>
+  <li><strong>Live session tracking:</strong> Real-time power reading, kWh delivered, estimated cost, time elapsed. Data sourced from MeterValues pushed over OCPP.</li>
+  <li><strong>Receipts:</strong> PDF receipt generated on session end, sent via email and available in-app. Includes session details, kWh, tariff breakdown, total cost.</li>
+  <li><strong>Charger map:</strong> Integrated map showing all your chargers with live availability status. Drives organic discovery.</li>
+  <li><strong>Plug &amp; Charge provisioning:</strong> For ISO 15118-capable setups — driver requests a contract certificate through the app, which OpenCPO issues and delivers to the vehicle.</li>
+</ul>
+
+<h3 class="docs-h3">Customization</h3>
+<p>The Charge App uses a skins system — you can brand it with your own logo, colors, and name without forking the codebase. The skin configuration lives in the OpenCPO settings and is served at build time. Multiple brands can share the same backend. Each roaming partner can have their own skinned instance pointing at the same charger network.</p>
+
+</div>
+</details>
+
+<!-- ═══ CHARGER FARM ═══ -->
+<details id="farm">
+<summary class="docs-summary">
+  <span class="docs-section-num">10</span>
+  Virtual Charger Farm — Load Testing &amp; Compliance
+</summary>
+<div class="docs-section-body">
+
+<p class="docs-lead">The Charger Farm is a simulator that creates virtual chargers and runs realistic charging scenarios against your OpenCPO instance. It's how you verify your setup works before deploying physical hardware — and how you find out where your system breaks under load.</p>
+
+<h3 class="docs-h3">What It Simulates</h3>
+<ul class="docs-list">
+  <li><strong>BootNotification and heartbeat cycles</strong> — validates charger registration and heartbeat interval handling</li>
+  <li><strong>Full session lifecycle</strong> — Authorize → StartTransaction → MeterValues stream → StopTransaction, with randomized energy and duration</li>
+  <li><strong>Mixed OCPP versions</strong> — simultaneous 1.6j and 2.0.1 chargers in the same test run</li>
+  <li><strong>Network degradation</strong> — simulated packet loss, reconnects, and offline periods to test OCPP reconnect handling</li>
+  <li><strong>Peak load scenarios</strong> — 100, 500, 1000 concurrent sessions to establish your throughput ceiling</li>
+  <li><strong>Chaos mode</strong> — random disconnects, malformed messages, unexpected message ordering</li>
+  <li><strong>Hardware profiles</strong> — simulates specific charger models (HG Power ENC-DCL120B, ABB Terra series) with their known quirks</li>
+</ul>
+
+<h3 class="docs-h3">When to Use It</h3>
+<ol class="docs-list">
+  <li><strong>Before go-live:</strong> Run a 24-hour soak test with 50 virtual chargers to catch any edge cases in your tariff engine, session handling, or database queries under sustained load.</li>
+  <li><strong>After a software update:</strong> Run the compliance scenario set to verify OCPP message handling is correct and no regressions were introduced.</li>
+  <li><strong>Capacity planning:</strong> Establish the charger count your current server handles before performance degrades — then size your infrastructure ahead of that limit.</li>
+  <li><strong>Debugging:</strong> Reproduce a specific charger's behaviour by configuring a Farm charger with the same firmware version and sequence of messages.</li>
+</ol>
+
+</div>
+</details>
+
+<!-- ═══ API REFERENCE ═══ -->
+<details id="api">
+<summary class="docs-summary">
+  <span class="docs-section-num">11</span>
+  API Reference
+  <span class="docs-badge docs-badge-blue">REST</span>
+</summary>
+<div class="docs-section-body">
+
+<p class="docs-lead">OpenCPO exposes a versioned REST API for all management operations. Everything the admin panel does, the API can do — enabling integration with your own systems, automated provisioning, and external dashboards.</p>
+
+<h3 class="docs-h3">Authentication</h3>
+<div class="docs-code-block"><pre><span class="docs-c-comment"># Management API — X-API-Key header</span>
+curl https://api.your-opencpo.com/api/v1/chargers \
+  -H "X-API-Key: your-management-api-key"
+
+<span class="docs-c-comment"># OCPI endpoints — Bearer token (per-partner)</span>
+curl https://api.your-opencpo.com/ocpi/2.2.1/locations \
+  -H "Authorization: Token ocpi-partner-token-here"</pre></div>
+
+<h3 class="docs-h3">Key Endpoint Groups</h3>
+<div class="docs-table-wrap">
+  <table class="docs-table">
+    <thead><tr><th>Path</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>GET /api/v1/chargers</code></td><td>List all chargers with live status</td></tr>
+      <tr><td><code>POST /api/v1/chargers/{id}/remote-start</code></td><td>Remote start a session (OCPP RemoteStartTransaction)</td></tr>
+      <tr><td><code>POST /api/v1/chargers/{id}/remote-stop</code></td><td>Remote stop a session</td></tr>
+      <tr><td><code>GET /api/v1/sessions</code></td><td>Session list with filtering by charger, token, date range</td></tr>
+      <tr><td><code>GET /api/v1/tokens</code></td><td>Token list — add/update/block via POST/PUT</td></tr>
+      <tr><td><code>GET /api/v1/tariffs</code></td><td>Tariff definitions — create and assign via POST</td></tr>
+      <tr><td><code>GET /api/v1/pki/certificates</code></td><td>Certificate inventory</td></tr>
+      <tr><td><code>POST /api/v1/pki/issue</code></td><td>Issue a new certificate</td></tr>
+      <tr><td><code>GET /api/v1/ocpi/partners</code></td><td>Roaming partner list and status</td></tr>
+      <tr><td><code>POST /api/v1/smart-charging/profile</code></td><td>Set charging profile (load management)</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="docs-callout">
+  Full interactive API documentation with request/response schemas, authentication sandbox, and code examples is available at <a href="https://api.opencpo.io/docs" style="color:#00B0E4;" target="_blank">api.opencpo.io/docs</a> — powered by OpenAPI 3.1.
+</div>
+
+<h3 class="docs-h3">Webhooks</h3>
+<p>OpenCPO can push events to your systems in real time via webhooks. Configure endpoints at Settings → Webhooks. Available events:</p>
+<div class="docs-code-block"><pre><span class="docs-c-comment">// Webhook payload — session.started</span>
+{
+  "event": "session.started",
+  "timestamp": "2026-04-02T22:14:33Z",
+  "data": {
+    "session_id": "sess-00142",
+    "charger_id": "theater-amsterdam-01",
+    "connector_id": 1,
+    "token_uid": "04:A3:B7:22",
+    "meter_start_kwh": 1204.33
+  }
+}</pre></div>
+<p>Other events: <code>session.stopped</code>, <code>session.meter_update</code>, <code>charger.online</code>, <code>charger.offline</code>, <code>charger.fault</code>, <code>token.blocked</code>, <code>certificate.expiring</code>.</p>
+
+</div>
+</details>

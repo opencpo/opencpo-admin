@@ -1,0 +1,219 @@
+{# OCPP section — included by docs.html #}
+
+<details id="ocpp" open>
+<summary class="docs-summary">
+  <span class="docs-section-num">02</span>
+  OCPP — The Charger Communication Protocol
+  <span class="docs-badge">OCPP 1.6j</span>
+  <span class="docs-badge docs-badge-blue">OCPP 2.0.1</span>
+</summary>
+<div class="docs-section-body">
+
+<p class="docs-lead">OCPP (Open Charge Point Protocol) is the language chargers and central systems use to talk to each other. Every message — boot, heartbeat, authorize, meter reading — follows this protocol. Understanding it is the foundation of everything else.</p>
+
+<!-- Architecture Diagram -->
+<div class="docs-diagram-wrap" style="margin-bottom:28px;">
+  <div class="docs-diagram-label">OCPP Architecture — Message Flow</div>
+  <svg viewBox="0 0 860 320" style="width:100%;display:block;max-width:860px;margin:0 auto;" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="arr" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#2d5a8a"/></marker>
+      <marker id="arr-g" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#84BD00"/></marker>
+    </defs>
+    <!-- Chargers column -->
+    <rect x="10" y="40"  width="130" height="52" rx="8" fill="#0d2137" stroke="#1a3a5c"/>
+    <text x="75" y="60"  text-anchor="middle" font-size="9" fill="#4a7fa8" font-family="monospace" font-weight="700">CHARGER A</text>
+    <text x="75" y="76"  text-anchor="middle" font-size="8" fill="#3d5870">OCPP 1.6j</text>
+    <text x="75" y="88"  text-anchor="middle" font-size="8" fill="#84BD00">ws://:9100/{id}</text>
+
+    <rect x="10" y="110" width="130" height="52" rx="8" fill="#0d2137" stroke="#1a3a5c"/>
+    <text x="75" y="130" text-anchor="middle" font-size="9" fill="#4a7fa8" font-family="monospace" font-weight="700">CHARGER B</text>
+    <text x="75" y="146" text-anchor="middle" font-size="8" fill="#3d5870">OCPP 1.6j</text>
+    <text x="75" y="158" text-anchor="middle" font-size="8" fill="#84BD00">ws://:9100/{id}</text>
+
+    <rect x="10" y="200" width="130" height="52" rx="8" fill="#0d2137" stroke="#15304a"/>
+    <text x="75" y="220" text-anchor="middle" font-size="9" fill="#4a7fa8" font-family="monospace" font-weight="700">CHARGER C</text>
+    <text x="75" y="236" text-anchor="middle" font-size="8" fill="#3d5870">OCPP 2.0.1</text>
+    <text x="75" y="248" text-anchor="middle" font-size="8" fill="#00B0E4">ws://:9201/{id}</text>
+
+    <!-- WebSocket label -->
+    <text x="170" y="145" text-anchor="middle" font-size="8" fill="#3d5870" font-family="monospace">WebSocket</text>
+    <text x="170" y="155" text-anchor="middle" font-size="8" fill="#3d5870" font-family="monospace">(persistent)</text>
+
+    <!-- Arrows charger → core -->
+    <line x1="141" y1="66"  x2="248" y2="66"  stroke="#1a3a5c" stroke-width="1.5" marker-end="url(#arr)"/>
+    <line x1="141" y1="136" x2="248" y2="136" stroke="#1a3a5c" stroke-width="1.5" marker-end="url(#arr)"/>
+    <line x1="141" y1="226" x2="248" y2="195" stroke="#1a3a5c" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr)"/>
+
+    <!-- OCPP Core -->
+    <rect x="250" y="40" width="160" height="220" rx="10" fill="#071828" stroke="#00B0E4" stroke-opacity="0.4"/>
+    <text x="330" y="62"  text-anchor="middle" font-size="9" fill="#00B0E4" font-family="monospace" font-weight="700">OCPP CORE</text>
+    <rect x="264" y="74"  width="132" height="24" rx="4" fill="#0a1e30" stroke="#1a3a5c"/>
+    <text x="330" y="89"  text-anchor="middle" font-size="8" fill="#84BD00">1.6j Handler :9100</text>
+    <rect x="264" y="104" width="132" height="24" rx="4" fill="#0a1e30" stroke="#1a3a5c"/>
+    <text x="330" y="119" text-anchor="middle" font-size="8" fill="#00B0E4">2.0.1 Handler :9201</text>
+    <rect x="264" y="136" width="132" height="24" rx="4" fill="#0a1e30" stroke="#1a3a5c"/>
+    <text x="330" y="151" text-anchor="middle" font-size="8" fill="#c0cdd8">Auth / Tokens</text>
+    <rect x="264" y="166" width="132" height="24" rx="4" fill="#0a1e30" stroke="#1a3a5c"/>
+    <text x="330" y="181" text-anchor="middle" font-size="8" fill="#c0cdd8">Session Engine</text>
+    <rect x="264" y="196" width="132" height="24" rx="4" fill="#0a1e30" stroke="#1a3a5c"/>
+    <text x="330" y="211" text-anchor="middle" font-size="8" fill="#c0cdd8">Tariff / Billing</text>
+    <text x="330" y="246" text-anchor="middle" font-size="7" fill="#3d5870">PostgreSQL + Redis</text>
+
+    <!-- Core → Event Bus -->
+    <line x1="411" y1="150" x2="468" y2="150" stroke="#2d5a8a" stroke-width="1.5" marker-end="url(#arr)"/>
+    <text x="440" y="143" text-anchor="middle" font-size="7" fill="#3d5870">events</text>
+
+    <!-- Event Bus -->
+    <rect x="470" y="100" width="120" height="100" rx="8" fill="#0a1628" stroke="#1a3a5c"/>
+    <text x="530" y="122" text-anchor="middle" font-size="9" fill="#c0cdd8" font-family="monospace" font-weight="700">EVENT BUS</text>
+    <text x="530" y="138" text-anchor="middle" font-size="8" fill="#3d5870">Redis Pub/Sub</text>
+    <text x="530" y="158" text-anchor="middle" font-size="7" fill="#2d4a63">session.started</text>
+    <text x="530" y="170" text-anchor="middle" font-size="7" fill="#2d4a63">session.stopped</text>
+    <text x="530" y="182" text-anchor="middle" font-size="7" fill="#2d4a63">charger.status</text>
+
+    <!-- Event Bus → Consumers -->
+    <line x1="591" y1="125" x2="648" y2="88"  stroke="#2d5a8a" stroke-width="1.5" marker-end="url(#arr)"/>
+    <line x1="591" y1="150" x2="648" y2="155" stroke="#2d5a8a" stroke-width="1.5" marker-end="url(#arr)"/>
+    <line x1="591" y1="175" x2="648" y2="218" stroke="#2d5a8a" stroke-width="1.5" marker-end="url(#arr)"/>
+
+    <!-- Consumers -->
+    <rect x="650" y="56"  width="100" height="40" rx="6" fill="#0d2137" stroke="#1a3a5c"/>
+    <text x="700" y="72"  text-anchor="middle" font-size="8" fill="#84BD00" font-weight="600">Admin Panel</text>
+    <text x="700" y="84"  text-anchor="middle" font-size="7" fill="#3d5870">live dashboard</text>
+
+    <rect x="650" y="132" width="100" height="40" rx="6" fill="#0d2137" stroke="#1a3a5c"/>
+    <text x="700" y="148" text-anchor="middle" font-size="8" fill="#00B0E4" font-weight="600">Charge App</text>
+    <text x="700" y="160" text-anchor="middle" font-size="7" fill="#3d5870">driver sessions</text>
+
+    <rect x="650" y="198" width="100" height="40" rx="6" fill="#0d2137" stroke="#1a3a5c"/>
+    <text x="700" y="214" text-anchor="middle" font-size="8" fill="#c0cdd8" font-weight="600">EMS</text>
+    <text x="700" y="226" text-anchor="middle" font-size="7" fill="#3d5870">smart charging</text>
+
+    <!-- REST API arrow -->
+    <line x1="411" y1="240" x2="760" y2="240" stroke="#1a3a5c" stroke-width="1" stroke-dasharray="3,4"/>
+    <rect x="762" y="224" width="88" height="32" rx="6" fill="#0d2137" stroke="#1a3a5c"/>
+    <text x="806" y="236" text-anchor="middle" font-size="8" fill="#84BD00" font-weight="600">REST API</text>
+    <text x="806" y="248" text-anchor="middle" font-size="7" fill="#3d5870">Management</text>
+    <text x="580" y="255" text-anchor="middle" font-size="7" fill="#3d5870">REST (management, not real-time)</text>
+  </svg>
+</div>
+
+<!-- 1.6j vs 2.0.1 -->
+<h3 class="docs-h3">OCPP 1.6j vs 2.0.1 — Which to Use</h3>
+<div class="docs-table-wrap">
+  <table class="docs-table">
+    <thead><tr><th>Feature</th><th>OCPP 1.6j (Amendment 1)</th><th>OCPP 2.0.1</th></tr></thead>
+    <tbody>
+      <tr><td>Market adoption</td><td>Dominant — most chargers deployed globally</td><td>Growing — new hardware from 2022+</td></tr>
+      <tr><td>Security profile</td><td>Basic auth, optional TLS</td><td>Mandatory TLS, certificate-based auth</td></tr>
+      <tr><td>ISO 15118 / Plug &amp; Charge</td><td>Not supported natively</td><td>Native support (CertificateSigned, etc.)</td></tr>
+      <tr><td>Smart charging</td><td>SetChargingProfile with power limits</td><td>Full EV energy offer, schedule + limits</td></tr>
+      <tr><td>Message format</td><td>JSON over WebSocket</td><td>JSON over WebSocket (same transport)</td></tr>
+      <tr><td>Monitoring</td><td>MeterValues with sampled intervals</td><td>TransactionEvent with richer data</td></tr>
+      <tr><td>Recommendation</td><td>Use for existing hardware</td><td>Require for new hardware purchases</td></tr>
+    </tbody>
+  </table>
+</div>
+<p class="docs-note">OpenCPO runs both protocol handlers simultaneously on separate ports. A charger connects to the port that matches its protocol version — no configuration needed on the server side.</p>
+
+<!-- Message types -->
+<h3 class="docs-h3">Message Structure</h3>
+<p>Every OCPP message is a JSON array over a persistent WebSocket connection. There are three types:</p>
+<div class="docs-code-block"><pre><span class="docs-c-comment">// CALL — initiated by charger or central system</span>
+[2, "message-id-1234", "BootNotification", {
+  "chargePointVendor": "HG Power",
+  "chargePointModel": "ENC-DCL120B",
+  "firmwareVersion": "2.1.4"
+}]
+
+<span class="docs-c-comment">// CALL_RESULT — response to a CALL</span>
+[3, "message-id-1234", {
+  "status": "Accepted",
+  "currentTime": "2026-04-02T22:00:00Z",
+  "interval": 300
+}]
+
+<span class="docs-c-comment">// CALL_ERROR — error response</span>
+[4, "message-id-1234", "NotSupported", "Action not implemented", {}]</pre></div>
+
+<!-- Key messages -->
+<h3 class="docs-h3">Key Messages in a Session Lifecycle</h3>
+<div class="docs-timeline">
+  <div class="docs-tl-item">
+    <div class="docs-tl-dot"></div>
+    <div class="docs-tl-content">
+      <strong>BootNotification</strong> — Charger announces itself on connect. Core responds Accepted/Pending/Rejected and sets heartbeat interval. This is where the charger is registered if new.
+    </div>
+  </div>
+  <div class="docs-tl-item">
+    <div class="docs-tl-dot"></div>
+    <div class="docs-tl-content">
+      <strong>StatusNotification</strong> — Charger reports connector state changes: Available → Preparing → Charging → Finishing → Available. Core updates the dashboard in real time.
+    </div>
+  </div>
+  <div class="docs-tl-item">
+    <div class="docs-tl-dot"></div>
+    <div class="docs-tl-content">
+      <strong>Authorize</strong> — Charger asks: "Can this RFID token start a session?" Core checks the token database and returns Accepted, Blocked, or Invalid. In whitelist mode, the charger can cache this response and operate offline.
+    </div>
+  </div>
+  <div class="docs-tl-item">
+    <div class="docs-tl-dot"></div>
+    <div class="docs-tl-content">
+      <strong>StartTransaction / TransactionEvent (2.0.1)</strong> — Session begins. Core records start time, connector, token, meter reading (kWh). Returns a transaction ID used for all subsequent messages.
+    </div>
+  </div>
+  <div class="docs-tl-item">
+    <div class="docs-tl-dot"></div>
+    <div class="docs-tl-content">
+      <strong>MeterValues</strong> — Periodic energy readings (configurable interval, typically 60–300 seconds). Used for live session tracking, billing calculation, and smart charging decisions. Includes energy (kWh), power (W), voltage, current, and SoC where supported.
+    </div>
+  </div>
+  <div class="docs-tl-item">
+    <div class="docs-tl-dot docs-tl-dot-end"></div>
+    <div class="docs-tl-content">
+      <strong>StopTransaction / TransactionEvent ENDED</strong> — Session ends. Final meter reading sent, reason recorded (Local, Remote, EV Disconnect, etc.). Core calculates energy delivered, applies tariff, generates receipt.
+    </div>
+  </div>
+</div>
+
+<!-- Smart Charging -->
+<h3 class="docs-h3">Smart Charging — SetChargingProfile</h3>
+<p>OCPP's smart charging feature lets the central system control how much power each charger draws. This is how OpenCPO integrates with EMS to prevent grid overload:</p>
+<div class="docs-code-block"><pre><span class="docs-c-comment">// Core → Charger: limit to 16A (≈11kW on 3-phase)</span>
+[2, "sc-001", "SetChargingProfile", {
+  "connectorId": 1,
+  "csChargingProfiles": {
+    "chargingProfileId": 1,
+    "stackLevel": 0,
+    "chargingProfilePurpose": "TxDefaultProfile",
+    "chargingProfileKind": "Relative",
+    "chargingSchedule": {
+      "chargingRateUnit": "A",
+      "chargingSchedulePeriod": [
+        { "startPeriod": 0, "limit": 16.0 }
+      ]
+    }
+  }
+}]</pre></div>
+<p>The EMS monitors total site load and sends updated profiles when demand exceeds the grid connection capacity. Chargers respond within one OCPP message cycle (typically under 500ms).</p>
+
+<!-- Connection URL -->
+<h3 class="docs-h3">Connecting a Charger</h3>
+<p>Configure the charger's "Central System URL" to:</p>
+<div class="docs-code-block"><pre><span class="docs-c-comment"># OCPP 1.6j</span>
+ws://your-server:9100/{charger_id}
+wss://your-server:9100/{charger_id}   <span class="docs-c-comment"># with TLS (recommended)</span>
+
+<span class="docs-c-comment"># OCPP 2.0.1</span>
+ws://your-server:9201/{charger_id}
+wss://your-server:9201/{charger_id}   <span class="docs-c-comment"># with TLS (mandatory in 2.0.1)</span></pre></div>
+<p>The <code>charger_id</code> must be unique across your network. Use a consistent naming convention: <code>site-charger-connector</code> (e.g., <code>theater-amsterdam-01</code>). The charger will auto-register on first BootNotification — no pre-configuration needed in OpenCPO.</p>
+
+<!-- OCPP Messages page -->
+<div class="docs-callout">
+  <strong>Live Protocol Viewer</strong> — Admin → <a href="/ocpp" style="color:#00B0E4;">OCPP Messages</a> shows every CALL and CALL_RESULT in real time. Invaluable for debugging charger behaviour. Filter by charger ID, message type, or time range.
+</div>
+
+</div>
+</details>
