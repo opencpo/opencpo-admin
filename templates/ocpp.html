@@ -34,34 +34,26 @@
       <select id="filter-type" onchange="applyFilters()"
         style="background:#111c2e;border:1px solid #1e3450;color:#c0cdd8;padding:6px 10px;border-radius:6px;font-size:12px;min-width:180px;">
         <option value="">All types</option>
-        <optgroup label="Connection">
-          <option value="BootNotification">BootNotification</option>
-          <option value="Heartbeat">Heartbeat</option>
-          <option value="StatusNotification">StatusNotification</option>
-          <option value="FirmwareStatusNotification">FirmwareStatusNotification</option>
-          <option value="DiagnosticsStatusNotification">DiagnosticsStatusNotification</option>
+        <optgroup label="Charger">
+          <option value="charger.boot">Boot</option>
+          <option value="charger.heartbeat">Heartbeat</option>
+          <option value="charger.status">Status Change</option>
+          <option value="charger.online">Online</option>
+          <option value="charger.offline">Offline</option>
+          <option value="charger.firmware">Firmware Update</option>
         </optgroup>
-        <optgroup label="Charging">
-          <option value="StartTransaction">StartTransaction</option>
-          <option value="StopTransaction">StopTransaction</option>
-          <option value="MeterValues">MeterValues</option>
+        <optgroup label="Sessions">
+          <option value="session.start">Session Start</option>
+          <option value="session.meter">Meter Values</option>
+          <option value="session.stop">Session Stop</option>
+          <option value="session.cdr">Charge Record (CDR)</option>
         </optgroup>
         <optgroup label="Authorization">
-          <option value="Authorize">Authorize</option>
+          <option value="auth.result">Auth Result</option>
         </optgroup>
-        <optgroup label="Remote Commands">
-          <option value="RemoteStartTransaction">RemoteStartTransaction</option>
-          <option value="RemoteStopTransaction">RemoteStopTransaction</option>
-          <option value="Reset">Reset</option>
-          <option value="ChangeConfiguration">ChangeConfiguration</option>
-          <option value="GetConfiguration">GetConfiguration</option>
-          <option value="TriggerMessage">TriggerMessage</option>
-          <option value="SetChargingProfile">SetChargingProfile</option>
-          <option value="ClearChargingProfile">ClearChargingProfile</option>
-          <option value="UnlockConnector">UnlockConnector</option>
-        </optgroup>
-        <optgroup label="Data Transfer">
-          <option value="DataTransfer">DataTransfer</option>
+        <optgroup label="Operations">
+          <option value="ops.alert">Alert</option>
+          <option value="ops.heal">Auto-Heal</option>
         </optgroup>
       </select>
     </div>
