@@ -1,8 +1,12 @@
 """OCPP message viewer routes."""
+import os
+
+import httpx
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse, JSONResponse
+from starlette.responses import StreamingResponse
 
-from shared import api, templates
+from shared import api, templates, CORE_API, CORE_API_KEY
 
 router = APIRouter()
 
@@ -34,3 +38,19 @@ async def ocpp_messages_partial(request: Request, limit: int = 200, cp_id: str =
         events = []
 
     return JSONResponse({"events": events})
+
+
+@router.get("/api/events/stream")
+async def events_stream_proxy(request: Request):
+    """Proxy SSE stream from OCPP Core to the browser (avoids CORS/port issues)."""
+    headers = {"X-API-Key": CORE_API_KEY} if CORE_API_KEY else {}
+
+    async def stream():
+        async with httpx.AsyncClient(timeout=None) as client:
+            async with client.stream(
+                "GET", f"{CORE_API}/api/v1/events/stream", headers=headers
+            ) as resp:
+                async for chunk in resp.aiter_bytes():
+                    yield chunk
+
+    return StreamingResponse(stream(), media_type="text/event-stream")

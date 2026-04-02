@@ -538,8 +538,7 @@ async function loadHistory() {
 
 // ─── SSE connection ───────────────────────────────────────────────────────────
 function connectSSE() {
-  const coreApi = `${location.protocol}//${location.hostname}:8000`;
-  const url = coreApi + '/api/v1/events/stream';
+  const url = '/api/events/stream';
 
   if (sseSource) sseSource.close();
 
