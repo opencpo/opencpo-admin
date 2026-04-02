@@ -28,13 +28,17 @@ async def settings_page(request: Request):
         "operator_name": "OpenCPO", "emsp_country_code": "NL", "emsp_party_id": "OCP",
         "base_url": "", "versions_path": "/ocpi/versions",
     })
+    tailscale = data.get("tailscale", {
+        "auth_key": "", "tailnet": "", "api_key": "", "enabled": False,
+    })
 
     return templates.TemplateResponse(request, "settings.html", {
-        "active": "settings",
-        "sms":    sms,
-        "smtp":   smtp,
-        "otp":    otp,
-        "ocpi":   ocpi,
+        "active":    "settings",
+        "sms":       sms,
+        "smtp":      smtp,
+        "otp":       otp,
+        "ocpi":      ocpi,
+        "tailscale": tailscale,
     })
 
 
@@ -148,6 +152,40 @@ async def action_save_ocpi(request: Request):
         return HTMLResponse(_ok("OCPI identity saved"))
     except Exception as exc:
         return HTMLResponse(_err(str(exc)))
+
+
+# ── Tailscale / Network ───────────────────────────────────────────────────
+
+@router.post("/action/settings/tailscale", response_class=HTMLResponse)
+async def action_save_tailscale(request: Request):
+    """Save Tailscale / network settings via Core API."""
+    form = await request.form()
+    body = {
+        "tailnet":   form.get("tailnet", "").strip(),
+        "api_key":   form.get("api_key", ""),
+        "auth_key":  form.get("auth_key", ""),
+        "enabled":   form.get("enabled") == "on",
+    }
+    try:
+        await api("/settings/tailscale", method="PUT", json={"value": body})
+        return HTMLResponse(_ok("Tailscale settings saved"))
+    except Exception as exc:
+        return HTMLResponse(_err(str(exc)))
+
+
+@router.post("/action/settings/tailscale/test", response_class=HTMLResponse)
+async def action_test_tailscale(request: Request):
+    """Test Tailscale API connectivity via Core."""
+    try:
+        result = await api("/network/status")
+        if result.get("configured"):
+            nodes = await api("/network/nodes")
+            count = len(nodes.get("nodes", []))
+            return HTMLResponse(_ok(f"Connected. {count} device(s) on tailnet."))
+        else:
+            return HTMLResponse(_err("Tailscale API key not configured — save your settings first."))
+    except Exception as exc:
+        return HTMLResponse(_err(f"Connection test failed: {str(exc)}"))
 
 
 # ── UI helpers ────────────────────────────────────────────────────────────
