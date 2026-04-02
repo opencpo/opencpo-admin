@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 {% set active = "tariffs" %}
-{% block title %}⚡ Tariffs{% endblock %}
+{% block title %}Tariffs{% endblock %}
 
 {% block content %}
 <div class="flex justify-between items-center mb-6">
     <div>
-        <h1 class="text-2xl font-bold">⚡ Tariffs</h1>
-        <p class="text-gray-500 text-sm mt-1">Manage pricing structures and charging costs</p>
+        <h1 class="text-2xl font-bold">Tariffs</h1>
+        <p style="color:#4a6580;font-size:13px;margin-top:4px;margin-bottom:0;">Tariffs control how much drivers pay when they charge. Each tariff is a pricing rule you assign to one or more chargers. Drivers see the price before they start charging.</p>
     </div>
     <button onclick="openModal('modal-create')"
         class="px-4 py-2 bg-brand-green text-black font-bold rounded-lg hover:opacity-90 transition-opacity text-sm">
@@ -14,6 +14,13 @@
     </button>
 </div>
 
+<!-- Pricing field legend -->
+<div class="mb-5 p-4 bg-gray-900 border border-gray-800 rounded-xl text-xs text-gray-400 grid grid-cols-2 md:grid-cols-4 gap-3">
+    <div><span class="text-gray-200 font-semibold block mb-0.5">Energy Rate (€/kWh)</span>The main charge — drivers pay this per kilowatt-hour of electricity delivered. Most tariffs only need this.</div>
+    <div><span class="text-gray-200 font-semibold block mb-0.5">Time Rate (€/min)</span>Optional per-minute fee while charging. Useful for busy locations where you want to encourage faster turnover.</div>
+    <div><span class="text-gray-200 font-semibold block mb-0.5">Idle Rate (€/min)</span>Fee that kicks in after charging is complete but the car is still plugged in. Encourages drivers to free up the charger promptly.</div>
+    <div><span class="text-gray-200 font-semibold block mb-0.5">Flat Fee (€)</span>A fixed connection fee charged once per session, regardless of energy or time. Can be used to cover infrastructure costs.</div>
+</div>
 <!-- ── Section 1: Tariff Cards ───────────────────────────────────────── -->
 <div id="tariff-cards" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-8">
 {% for t in tariffs %}

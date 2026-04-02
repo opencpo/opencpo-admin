@@ -3,6 +3,11 @@
 {% block title %}Tokens — CPO Admin{% endblock %}
 
 {% block content %}
+<div class="mb-5">
+    <h1 class="text-2xl font-bold">Authorization Tokens</h1>
+    <p style="color:#4a6580;font-size:13px;margin-top:4px;margin-bottom:0;">Tokens are the physical RFID cards (or app credentials) that drivers use to start a charging session — they tap the card on the charger's reader. This page shows every token in your network: who it belongs to, whether it's active, and when it was last used.</p>
+</div>
+<p style="color:#4a6580;font-size:12px;margin-bottom:10px;"><span style="color:#86efac;">Active</span> = card can start charging &nbsp;·&nbsp; <span style="color:#f87171;">Blocked</span> = card has been denied (lost/stolen/policy) &nbsp;·&nbsp; <span style="color:#fbbf24;">Expired</span> = validity date has passed &nbsp;·&nbsp; RFID = physical card &nbsp;·&nbsp; App = mobile app token &nbsp;·&nbsp; P&amp;C = Plug &amp; Charge (automatic, no card needed)</p>
 <!-- Summary cards -->
 <div class="grid grid-cols-5 gap-4 mb-6">
   {% set stat_classes = "bg-gray-900 border border-gray-800 rounded-xl p-4 text-center" %}

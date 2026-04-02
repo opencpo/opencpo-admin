@@ -3,8 +3,11 @@
 {% block title %}Chargers — CPO Admin{% endblock %}
 
 {% block content %}
-<div class="flex justify-between items-center mb-4">
-    <h1 class="text-2xl font-bold">Chargers <span class="text-gray-500 text-lg" id="charger-count">({{ total }})</span></h1>
+<div class="flex justify-between items-start mb-4">
+    <div>
+        <h1 class="text-2xl font-bold">Chargers <span class="text-gray-500 text-lg" id="charger-count">({{ total }})</span></h1>
+        <p style="color:#4a6580;font-size:13px;margin-top:4px;margin-bottom:0;">The physical charging stations in your network. Each row is one charger — click its ID to open the remote control panel where you can start/stop charging or restart the device.</p>
+    </div>
     <div class="flex gap-2 flex-wrap">
         <button onclick="toggleFilter('all')" id="btn-all" class="px-3 py-1.5 rounded text-xs font-semibold bg-brand-blue text-white">All</button>
         <button onclick="toggleFilter('real')" id="btn-real" class="px-3 py-1.5 rounded text-xs font-semibold bg-gray-800 text-gray-400 border border-gray-700 hover:bg-gray-700">Real Only</button>
@@ -25,6 +28,7 @@
            oninput="applyFilters()">
 </div>
 
+<p style="color:#4a6580;font-size:12px;margin-bottom:8px;"><span style="color:#4ade80;">● Online</span> = connected to this server, ready to charge &nbsp;·&nbsp; <span style="color:#f87171;">● Offline</span> = not connected (check power supply and network cable) &nbsp;·&nbsp; <span style="color:#facc15;">SIM</span> = simulated charger used for testing, not a real device</p>
 <div class="bg-gray-900 rounded-lg border border-gray-800">
     <table class="w-full text-sm">
         <thead>

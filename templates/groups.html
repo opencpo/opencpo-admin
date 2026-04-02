@@ -3,9 +3,12 @@
 {% block title %}Groups — CPO Admin{% endblock %}
 
 {% block content %}
-<div class="flex justify-between items-center mb-6">
-  <h1 class="text-2xl font-bold text-gray-100">Token Groups <span class="text-gray-500 text-lg">({{ groups|length }})</span></h1>
-  <button onclick="openModal('modal-create')" class="px-4 py-2 bg-green-700 hover:bg-green-600 text-white rounded text-sm font-semibold">+ Add Group</button>
+<div class="flex justify-between items-start mb-6">
+  <div>
+      <h1 class="text-2xl font-bold text-gray-100">Token Groups <span class="text-gray-500 text-lg">({{ groups|length }})</span></h1>
+      <p style="color:#4a6580;font-size:13px;margin-top:4px;margin-bottom:0;">Groups let you organize RFID tokens by company or fleet for consolidated billing. For example, all cards belonging to "ACME Logistics" go in one group — then you can see their total energy use and costs at a glance, and send them one invoice.</p>
+  </div>
+  <button onclick="openModal('modal-create')" class="px-4 py-2 bg-green-700 hover:bg-green-600 text-white rounded text-sm font-semibold ml-4 flex-shrink-0">+ Add Group</button>
 </div>
 
 <div id="feedback" class="mb-4"></div>

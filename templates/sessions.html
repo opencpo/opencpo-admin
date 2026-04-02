@@ -3,8 +3,11 @@
 {% block title %}Sessions — CPO Admin{% endblock %}
 
 {% block content %}
-<div class="flex justify-between items-center mb-4">
-    <h1 class="text-2xl font-bold">Sessions <span class="text-gray-500 text-lg" id="session-count">({{ total }})</span></h1>
+<div class="flex justify-between items-start mb-4">
+    <div>
+        <h1 class="text-2xl font-bold">Sessions <span class="text-gray-500 text-lg" id="session-count">({{ total }})</span></h1>
+        <p style="color:#4a6580;font-size:13px;margin-top:4px;margin-bottom:0;">A session is one charging event — a car plugs in, charges, and unplugs. Each row shows which charger was used, how much energy was delivered (kWh), how long it took, and how the driver authenticated.</p>
+    </div>
     <div class="flex gap-2">
         <button onclick="setStatus('all')" id="btn-all" class="px-3 py-1.5 rounded text-xs font-semibold bg-brand-blue text-white">All</button>
         <button onclick="setStatus('active')" id="btn-active" class="px-3 py-1.5 rounded text-xs font-semibold bg-gray-800 text-gray-400 border border-gray-700 hover:bg-gray-700">Active</button>
@@ -39,6 +42,7 @@
     </select>
 </div>
 
+<p style="color:#4a6580;font-size:12px;margin-bottom:8px;"><span style="color:#86efac;">● Active</span> = car is currently plugged in and charging right now &nbsp;·&nbsp; <span style="color:#93c5fd;">● Completed</span> = session ended normally &nbsp;·&nbsp; Auth = how the driver started the session (RFID card tap, app, or remote command)</p>
 <div class="bg-gray-900 rounded-lg border border-gray-800">
     <table class="w-full text-sm">
         <thead>

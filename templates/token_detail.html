@@ -17,6 +17,7 @@
       {% else %}<span class="px-2 py-0.5 bg-gray-800 text-gray-400 rounded text-xs">{{ token.type }}</span>{% endif %}
     </div>
     <div class="text-xs text-gray-500">Created {{ (token.created_at or '')[:10] }}</div>
+    <p style="color:#4a6580;font-size:13px;margin-top:6px;margin-bottom:0;">Details for this individual RFID card or credential. See which driver it belongs to, which group it's billed under, and its full session history — every time and place this token was used to charge.</p>
   </div>
   <div class="flex gap-2">
     <a href="/tokens" class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-xs text-gray-300">← Tokens</a>

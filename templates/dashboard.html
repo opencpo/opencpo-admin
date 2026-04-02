@@ -3,7 +3,8 @@
 {% block title %}Dashboard — CPO Admin{% endblock %}
 
 {% block content %}
-<h1 class="text-2xl font-bold mb-6">Network Overview</h1>
+<h1 class="text-2xl font-bold mb-2">Network Overview</h1>
+<p style="color:#4a6580;font-size:13px;margin-top:4px;margin-bottom:0;">Your charging network at a glance — how many chargers are connected, how many cars are charging right now, and how much energy has been delivered in total. Numbers refresh automatically every 10 seconds.</p>
 
 <!-- Stats Cards (auto-refresh every 10s) -->
 <div hx-get="/partials/stats" hx-trigger="load, every 10s" hx-swap="innerHTML" id="stats-cards">
@@ -30,7 +31,10 @@
 <!-- Charger List (auto-refresh) -->
 <div class="bg-gray-900 rounded-lg border border-gray-800">
     <div class="p-4 border-b border-gray-800 flex justify-between items-center">
-        <h2 class="text-lg font-semibold">Chargers</h2>
+        <div>
+            <h2 class="text-lg font-semibold">Chargers</h2>
+            <p style="color:#4a6580;font-size:12px;margin-top:2px;margin-bottom:0;"><span style="color:#4ade80;">● Online</span> = connected and ready to charge &nbsp;·&nbsp; <span style="color:#f87171;">● Offline</span> = not reachable (check power and network)</p>
+        </div>
         <span class="htmx-indicator text-sm text-gray-500">⟳ updating...</span>
     </div>
     <div hx-get="/partials/charger-rows" hx-trigger="load, every 5s" hx-swap="innerHTML">
