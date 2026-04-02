@@ -7,12 +7,6 @@ from shared import api, templates
 router = APIRouter()
 
 
-@router.get("/ocpp", response_class=HTMLResponse)
-async def ocpp_page(request: Request):
-    """OCPP message viewer."""
-    return templates.TemplateResponse(request, "ocpp.html", context={})
-
-
 @router.get("/security", response_class=HTMLResponse)
 async def security_page(request: Request):
     """Security dashboard."""
