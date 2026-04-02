@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Receipts{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <h1 class="text-2xl font-bold">🧾 Receipts</h1>
+        <p class="text-sm text-gray-500 mt-1">💡 All completed sessions. Download receipt PDFs for each session.</p>
+    </div>
+    <span class="text-gray-400 text-sm">{{ sessions|length }} of {{ total }} sessions</span>
+</div>
+
+<div class="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+<table class="w-full text-sm">
+    <thead class="bg-gray-800/50">
+        <tr>
+            <th class="text-left p-3 text-gray-400 font-medium">Date</th>
+            <th class="text-left p-3 text-gray-400 font-medium">Charger</th>
+            <th class="text-left p-3 text-gray-400 font-medium">Driver</th>
+            <th class="text-right p-3 text-gray-400 font-medium">kWh</th>
+            <th class="text-right p-3 text-gray-400 font-medium">Rate</th>
+            <th class="text-right p-3 text-gray-400 font-medium">Amount</th>
+            <th class="text-center p-3 text-gray-400 font-medium">Actions</th>
+        </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-800">
+        {% for s in sessions %}
+        <tr class="hover:bg-gray-800/30">
+            <td class="p-3">
+                <div class="text-white">{{ s.stopped_at[:10] if s.stopped_at else '—' }}</div>
+                <div class="text-gray-500 text-xs">{{ s.stopped_at[11:16] if s.stopped_at else '' }}</div>
+            </td>
+            <td class="p-3">
+                <div class="text-white">{{ s.charger_name or s.charge_point_id or '—' }}</div>
+                {% if s.city %}<div class="text-gray-500 text-xs">{{ s.city }}</div>{% endif %}
+            </td>
+            <td class="p-3">
+                <div class="text-white">{{ s.driver_email or '—' }}</div>
+                {% if s.driver_phone %}<div class="text-gray-400 text-xs font-mono">{{ s.driver_phone }}</div>{% endif %}
+            </td>
+            <td class="p-3 text-right text-white font-mono">{{ "%.2f"|format(s.kwh or s.energy_kwh or 0) }}</td>
+            <td class="p-3 text-right text-gray-400 font-mono text-xs">€{{ "%.4f"|format(s.rate_kwh or 0) }}</td>
+            <td class="p-3 text-right text-brand-green font-semibold font-mono">€{{ "%.2f"|format(s.cost_incl or 0) }}</td>
+            <td class="p-3 text-center">
+                <a href="/receipts/{{ s.id }}/download" class="text-brand-blue hover:underline text-xs" title="Download PDF">📥 PDF</a>
+            </td>
+        </tr>
+        {% endfor %}
+        {% if not sessions %}
+        <tr><td colspan="7" class="p-8 text-center text-gray-500">No completed sessions yet</td></tr>
+        {% endif %}
+    </tbody>
+</table>
+</div>
+{% endblock %}

@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% set active = "drivers" %}
+
+{% block title %}Drivers{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-100">🚗 Driver Accounts</h1>
+        <p class="text-sm text-gray-500 mt-1">💡 Manage driver accounts and their PKI certificates.</p>
+        <p class="text-sm text-gray-400 mt-1">{{ total }} registered driver{{ 's' if total != 1 else '' }}</p>
+    </div>
+</div>
+
+{% if not accounts %}
+<div class="rounded-xl border border-gray-800 bg-gray-900 p-12 text-center text-gray-500">
+    <div class="text-4xl mb-3">🚗</div>
+    <div class="text-lg font-medium text-gray-400">No driver accounts yet</div>
+    <div class="text-sm mt-1">Drivers will appear here once they register in the charge app.</div>
+</div>
+{% else %}
+<div class="rounded-xl border border-gray-800 bg-gray-900 overflow-hidden">
+    <table class="w-full border-collapse">
+        <thead>
+            <tr class="border-b border-gray-800 bg-gray-950/50">
+                <th class="p-3 text-left text-[10px] uppercase tracking-widest text-gray-500">Name</th>
+                <th class="p-3 text-left text-[10px] uppercase tracking-widest text-gray-500">Email</th>
+                <th class="p-3 text-left text-[10px] uppercase tracking-widest text-gray-500">Phone</th>
+                <th class="p-3 text-right text-[10px] uppercase tracking-widest text-gray-500">Sessions</th>
+                <th class="p-3 text-right text-[10px] uppercase tracking-widest text-gray-500">Total kWh</th>
+                <th class="p-3 text-left text-[10px] uppercase tracking-widest text-gray-500">Certificate</th>
+                <th class="p-3 text-left text-[10px] uppercase tracking-widest text-gray-500">Created</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for account in accounts %}
+            <tr class="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors">
+                <!-- Name -->
+                <td class="p-3">
+                    <div class="flex items-center gap-2">
+                        <div class="w-7 h-7 rounded-full bg-brand-blue/20 border border-brand-blue/30 flex items-center justify-center text-xs font-bold text-brand-blue flex-shrink-0">
+                            {{ (account.name or account.email or '?')[0] | upper }}
+                        </div>
+                        <span class="text-gray-200 text-sm font-medium">{{ account.name or '—' }}</span>
+                    </div>
+                </td>
+
+                <!-- Email -->
+                <td class="p-3">
+                    <span class="text-gray-400 text-sm">{{ account.email or '—' }}</span>
+                </td>
+
+                <!-- Phone -->
+                <td class="p-3">
+                    {% if account.phone %}
+                    <span class="text-gray-400 text-sm font-mono">{{ account.phone }}</span>
+                    {% else %}
+                    <span class="text-gray-600 text-sm">—</span>
+                    {% endif %}
+                </td>
+
+                <!-- Sessions -->
+                <td class="p-3 text-right">
+                    <span class="text-gray-300 text-sm font-mono">{{ account.session_count or 0 }}</span>
+                </td>
+
+                <!-- Total kWh -->
+                <td class="p-3 text-right">
+                    <span class="text-gray-300 text-sm font-mono">
+                        {% if account.total_kwh %}
+                            {{ "%.1f"|format(account.total_kwh) }}
+                        {% else %}
+                            0.0
+                        {% endif %}
+                    </span>
+                </td>
+
+                <!-- Certificate -->
+                <td class="p-3">
+                    <div id="cert-status-{{ account.id }}">
+                    {% if account.cert and account.cert.status == 'active' %}
+                        <div class="flex items-center gap-2">
+                            <span class="inline-block w-2 h-2 rounded-full bg-green-400"></span>
+                            <span class="text-green-400 text-xs font-medium">Active</span>
+                            {% if account.cert.count > 1 %}
+                            <span class="text-gray-500 text-[10px]">({{ account.cert.count }})</span>
+                            {% endif %}
+                        </div>
+                        <span class="text-gray-500 text-[10px]">exp {{ account.cert.expires }}</span>
+                        <div class="flex gap-1 mt-1">
+                            <form hx-post="/action/driver/cert/issue" hx-target="#cert-status-{{ account.id }}" hx-swap="innerHTML">
+                                <input type="hidden" name="email" value="{{ account.email }}" />
+                                <button type="submit" class="text-[10px] px-2 py-0.5 rounded bg-blue-900/50 text-blue-300 hover:bg-blue-800/50 border border-blue-800/50">+ New</button>
+                            </form>
+                            <form hx-post="/action/driver/cert/revoke" hx-target="#cert-status-{{ account.id }}" hx-swap="innerHTML"
+                                  hx-confirm="Revoke ALL certificates for {{ account.email }}?">
+                                <input type="hidden" name="email" value="{{ account.email }}" />
+                                <button type="submit" class="text-[10px] px-2 py-0.5 rounded bg-red-900/50 text-red-300 hover:bg-red-800/50 border border-red-800/50">Revoke</button>
+                            </form>
+                        </div>
+                    {% else %}
+                        <div class="flex items-center gap-2">
+                            <span class="inline-block w-2 h-2 rounded-full bg-gray-600"></span>
+                            <span class="text-gray-500 text-xs">None</span>
+                        </div>
+                        <form hx-post="/action/driver/cert/issue" hx-target="#cert-status-{{ account.id }}" hx-swap="innerHTML" class="mt-1">
+                            <input type="hidden" name="email" value="{{ account.email }}" />
+                            <button type="submit" class="text-[10px] px-2 py-0.5 rounded bg-brand-blue/20 text-brand-blue hover:bg-brand-blue/30 border border-brand-blue/30">🔑 Issue cert</button>
+                        </form>
+                    {% endif %}
+                    </div>
+                </td>
+
+                <!-- Created -->
+                <td class="p-3">
+                    <span class="text-gray-500 text-xs">
+                        {% if account.created_at %}
+                            {{ account.created_at[:10] }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </span>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}
