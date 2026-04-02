@@ -3,91 +3,582 @@
 {% block title %}OCPP Messages — CPO Admin{% endblock %}
 
 {% block content %}
-<h1 class="text-2xl font-bold mb-2">OCPP Message Viewer</h1>
-<p style="color:#4a6580;font-size:13px;margin-top:4px;margin-bottom:20px;">OCPP is the standard communication protocol that chargers use to talk to this server — think of it as reading the raw conversation log between your chargers and the system. Useful for diagnosing connection problems, verifying that commands were received, or demonstrating compliance to auditors.</p>
-
-<!-- Live event stream -->
-<div class="bg-gray-900 rounded-lg border border-gray-800">
-    <div class="p-4 border-b border-gray-800 flex justify-between items-center">
-        <h2 class="text-lg font-semibold">Live Events</h2>
-        <div class="flex items-center space-x-3">
-            <span id="event-status" class="text-green-400 text-sm">● Connected</span>
-            <button onclick="clearEvents()" class="px-3 py-1 bg-gray-800 rounded text-sm hover:bg-gray-700">Clear</button>
-        </div>
-    </div>
-    <div id="event-log" class="p-4 font-mono text-xs max-h-[600px] overflow-y-auto space-y-1">
-        <div class="text-gray-500">Connecting to event stream...</div>
-    </div>
+<div style="margin-bottom:20px;">
+  <h1 class="text-2xl font-bold mb-1">OCPP Protocol Log</h1>
+  <p style="color:#4a6580;font-size:13px;max-width:760px;">
+    Every message exchanged between your chargers and this central system.
+    Think of it as a live debug console — each line shows a command sent to a charger
+    or a status report received from one.
+  </p>
 </div>
 
+<!-- Controls -->
+<div style="background:#0a1221;border:1px solid #15283f;border-radius:10px;padding:14px 16px;margin-bottom:12px;">
+  <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;">
+
+    <!-- Charger filter -->
+    <div style="display:flex;flex-direction:column;gap:4px;min-width:160px;">
+      <label style="font-size:10px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;">Charger</label>
+      <select id="filter-charger" onchange="applyFilters()"
+        style="background:#111c2e;border:1px solid #1e3450;color:#c0cdd8;padding:6px 10px;border-radius:6px;font-size:12px;min-width:160px;">
+        <option value="">All chargers</option>
+        {% for cp in chargers %}
+        <option value="{{ cp.id }}">{{ cp.id }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Event type filter -->
+    <div style="display:flex;flex-direction:column;gap:4px;min-width:180px;">
+      <label style="font-size:10px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;">Event Type</label>
+      <select id="filter-type" onchange="applyFilters()"
+        style="background:#111c2e;border:1px solid #1e3450;color:#c0cdd8;padding:6px 10px;border-radius:6px;font-size:12px;min-width:180px;">
+        <option value="">All types</option>
+        <optgroup label="Charger">
+          <option value="charger.boot">charger.boot</option>
+          <option value="charger.online">charger.online</option>
+          <option value="charger.offline">charger.offline</option>
+          <option value="charger.status">charger.status</option>
+          <option value="charger.heartbeat">charger.heartbeat</option>
+        </optgroup>
+        <optgroup label="Session">
+          <option value="session.start">session.start</option>
+          <option value="session.meter">session.meter</option>
+          <option value="session.stop">session.stop</option>
+          <option value="session.cdr">session.cdr</option>
+        </optgroup>
+        <optgroup label="Auth">
+          <option value="auth.result">auth.result</option>
+        </optgroup>
+        <optgroup label="Ops">
+          <option value="ops.alert">ops.alert</option>
+          <option value="pki.cert.issued">pki.cert.issued</option>
+        </optgroup>
+      </select>
+    </div>
+
+    <!-- Direction filter -->
+    <div style="display:flex;flex-direction:column;gap:4px;">
+      <label style="font-size:10px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;">Direction</label>
+      <select id="filter-direction" onchange="applyFilters()"
+        style="background:#111c2e;border:1px solid #1e3450;color:#c0cdd8;padding:6px 10px;border-radius:6px;font-size:12px;width:160px;">
+        <option value="">All</option>
+        <option value="from">From charger</option>
+        <option value="to">To charger</option>
+      </select>
+    </div>
+
+    <!-- Search -->
+    <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:200px;">
+      <label style="font-size:10px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;">Search</label>
+      <input id="filter-search" type="text" placeholder="Filter payload..." oninput="applyFilters()"
+        style="background:#111c2e;border:1px solid #1e3450;color:#c0cdd8;padding:6px 10px;border-radius:6px;font-size:12px;width:100%;">
+    </div>
+
+    <!-- Buttons -->
+    <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:#6b8299;">
+        <input type="checkbox" id="auto-scroll" checked
+          style="accent-color:#00B0E4;">
+        Auto-scroll
+      </label>
+      <button id="btn-pause" onclick="togglePause()"
+        style="padding:6px 14px;background:#111c2e;border:1px solid #1e3450;color:#c0cdd8;border-radius:6px;font-size:12px;cursor:pointer;">
+        Pause
+      </button>
+      <button onclick="clearLog()"
+        style="padding:6px 14px;background:#111c2e;border:1px solid #1e3450;color:#c0cdd8;border-radius:6px;font-size:12px;cursor:pointer;">
+        Clear
+      </button>
+      <button onclick="exportMessages()"
+        style="padding:6px 14px;background:#111c2e;border:1px solid #1e3450;color:#00B0E4;border-radius:6px;font-size:12px;cursor:pointer;">
+        Export JSON
+      </button>
+    </div>
+  </div>
+
+  <!-- Status bar -->
+  <div style="display:flex;align-items:center;gap:20px;margin-top:12px;padding-top:12px;border-top:1px solid #15283f;">
+    <span id="conn-status" style="font-size:12px;color:#84BD00;">● Connected</span>
+    <span id="msg-counter" style="font-size:12px;color:#4a6580;">0 events</span>
+    <span id="msg-rate" style="font-size:12px;color:#4a6580;">0 /sec</span>
+    <span id="filter-count" style="font-size:12px;color:#4a6580;"></span>
+  </div>
+</div>
+
+<!-- Message stream -->
+<div style="background:#060d18;border:1px solid #15283f;border-radius:10px;overflow:hidden;">
+  <div id="msg-log"
+    style="height:calc(100vh - 360px);min-height:320px;overflow-y:auto;font-family:'SF Mono','Fira Code',monospace;font-size:11px;padding:8px 0;">
+    <div id="msg-empty" style="padding:24px;color:#2d4a63;text-align:center;">Connecting to event stream…</div>
+  </div>
+</div>
+
+<!-- Detail panel (hidden by default) -->
+<div id="detail-panel"
+  style="display:none;position:fixed;top:60px;right:20px;width:520px;max-height:calc(100vh - 80px);background:#0a1221;border:1px solid #1e3450;border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,0.6);z-index:1000;overflow:hidden;display:flex;flex-direction:column;">
+  <div style="padding:12px 16px;border-bottom:1px solid #15283f;display:flex;justify-between;align-items:center;">
+    <div>
+      <span id="detail-title" style="font-size:13px;font-weight:600;color:#e8edf2;"></span>
+      <span id="detail-cp" style="font-size:11px;color:#4a6580;margin-left:8px;font-family:monospace;"></span>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button onclick="copyDetail()" id="btn-copy"
+        style="padding:4px 10px;background:#111c2e;border:1px solid #1e3450;color:#00B0E4;border-radius:5px;font-size:11px;cursor:pointer;">
+        Copy
+      </button>
+      <button onclick="closeDetail()"
+        style="padding:4px 8px;background:#111c2e;border:1px solid #1e3450;color:#6b8299;border-radius:5px;font-size:11px;cursor:pointer;">
+        Close
+      </button>
+    </div>
+  </div>
+  <div id="detail-meta" style="padding:10px 16px;border-bottom:1px solid #15283f;font-size:11px;color:#4a6580;font-family:monospace;"></div>
+  <div style="flex:1;overflow-y:auto;padding:12px 16px;">
+    <pre id="detail-json" style="margin:0;font-size:11px;line-height:1.6;white-space:pre-wrap;word-break:break-all;"></pre>
+  </div>
+</div>
+<div id="detail-backdrop" onclick="closeDetail()"
+  style="display:none;position:fixed;inset:0;z-index:999;"></div>
+
+<style>
+  .msg-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0;
+    padding: 3px 12px;
+    border-bottom: 1px solid #0d1b2e;
+    cursor: pointer;
+    transition: background 0.1s;
+    line-height: 1.5;
+  }
+  .msg-row:hover { background: #0d1b2e; }
+  .msg-row:last-child { border-bottom: none; }
+  .msg-ts   { color: #2d4a63; width: 88px; flex-shrink: 0; font-size: 10px; }
+  .msg-dir  { width: 20px; flex-shrink: 0; text-align: center; font-size: 12px; }
+  .msg-dir-from { color: #84BD00; }
+  .msg-dir-to   { color: #00B0E4; }
+  .msg-cp   { color: #6b8299; width: 90px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
+  .msg-cp a { color: inherit; text-decoration: none; }
+  .msg-cp a:hover { color: #c0cdd8; text-decoration: underline; }
+  .msg-type { width: 140px; flex-shrink: 0; font-weight: 500; font-size: 11px; }
+  .msg-preview { color: #4a6580; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
+
+  /* Type colors */
+  .type-boot, .type-heartbeat, .type-online, .type-offline { color: #64748b; }
+  .type-status { color: #3b82f6; }
+  .type-meter  { color: #22c55e; }
+  .type-start  { color: #eab308; }
+  .type-stop   { color: #f59e0b; }
+  .type-auth   { color: #a855f7; }
+  .type-remote { color: #f97316; }
+  .type-error, .type-alert { color: #ef4444; }
+  .type-pki    { color: #f97316; }
+
+  /* JSON syntax highlight */
+  .json-key    { color: #60a5fa; }
+  .json-str    { color: #86efac; }
+  .json-num    { color: #fde68a; }
+  .json-bool   { color: #c084fc; }
+  .json-null   { color: #9ca3af; }
+  .json-punct  { color: #475569; }
+
+  @media (max-width: 768px) {
+    #detail-panel { width: calc(100vw - 24px); right: 12px; top: 50px; }
+    .msg-cp { display: none; }
+    .msg-type { width: 110px; }
+  }
+</style>
+
 <script>
-    const log = document.getElementById('event-log');
-    const status = document.getElementById('event-status');
-    let eventCount = 0;
+// ─── State ───────────────────────────────────────────────────────────────────
+const MAX_MESSAGES = 1000;
+let allMessages = [];
+let filteredMessages = [];
+let paused = false;
+let pendingMessages = [];
+let sseSource = null;
 
-    function connectSSE() {
-        // Connect to OCPP Core event stream directly
-        const coreApi = '{{ request.url.scheme }}://{{ request.url.hostname }}:8000';
-        const source = new EventSource(coreApi + '/api/v1/events/stream');
+// Rate tracking
+let recentTimestamps = [];
 
-        source.onopen = () => {
-            status.innerHTML = '● Connected';
-            status.className = 'text-green-400 text-sm';
-        };
+// ─── Event type classification ────────────────────────────────────────────────
+function classifyType(type) {
+  if (!type) return { css: 'type-boot', label: type || 'unknown', dir: 'from' };
 
-        source.onerror = () => {
-            status.innerHTML = '● Disconnected';
-            status.className = 'text-red-400 text-sm';
-            setTimeout(connectSSE, 3000);
-        };
+  // Direction heuristic: ops/remote commands go TO the charger; everything else FROM
+  const toCharger = type.startsWith('ops.') || type.startsWith('remote.');
+  const dir = toCharger ? 'to' : 'from';
 
-        source.onmessage = (e) => addEvent(e);
+  let css = 'type-boot';
+  const t = type.toLowerCase();
+  if (t.includes('boot') || t.includes('heartbeat'))          css = 'type-boot';
+  else if (t.includes('online'))                               css = 'type-boot';
+  else if (t.includes('offline'))                              css = 'type-error';
+  else if (t.includes('status'))                               css = 'type-status';
+  else if (t.includes('meter'))                                css = 'type-meter';
+  else if (t.includes('start'))                                css = 'type-start';
+  else if (t.includes('stop') || t.includes('cdr'))           css = 'type-stop';
+  else if (t.includes('auth'))                                 css = 'type-auth';
+  else if (t.includes('alert') || t.includes('error'))        css = 'type-error';
+  else if (t.includes('pki') || t.includes('cert'))           css = 'type-pki';
 
-        // Listen for specific event types
-        const types = ['charger.boot', 'charger.online', 'charger.offline', 'charger.status',
-                       'session.start', 'session.meter', 'session.stop', 'session.cdr',
-                       'auth.result', 'pki.cert.issued', 'ops.alert'];
-        types.forEach(t => {
-            source.addEventListener(t, (e) => addEvent(e));
-        });
+  return { css, label: type, dir };
+}
+
+// ─── Direction from event (override via classify) ─────────────────────────────
+function getDirection(evt) {
+  // Use direction field if present (from ocpp_messages table data)
+  if (evt.direction) return evt.direction; // 'inbound' | 'outbound'
+  // Infer from event type
+  const { dir } = classifyType(evt.type);
+  return dir;
+}
+
+// ─── JSON syntax highlighting ─────────────────────────────────────────────────
+function highlightJSON(obj) {
+  const str = JSON.stringify(obj, null, 2);
+  return str
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function(match) {
+      if (/^"/.test(match)) {
+        if (/:$/.test(match)) return '<span class="json-key">' + match + '</span>';
+        return '<span class="json-str">' + match + '</span>';
+      }
+      if (/true|false/.test(match)) return '<span class="json-bool">' + match + '</span>';
+      if (/null/.test(match)) return '<span class="json-null">' + match + '</span>';
+      return '<span class="json-num">' + match + '</span>';
+    });
+}
+
+// ─── Timestamp formatting ─────────────────────────────────────────────────────
+function fmtTime(ts) {
+  if (!ts) return '--:--:--.---';
+  const d = new Date(ts);
+  const h = String(d.getHours()).padStart(2, '0');
+  const m = String(d.getMinutes()).padStart(2, '0');
+  const s = String(d.getSeconds()).padStart(2, '0');
+  const ms = String(d.getMilliseconds()).padStart(3, '0');
+  return `${h}:${m}:${s}.${ms}`;
+}
+
+// ─── Render a single message row ──────────────────────────────────────────────
+function renderRow(evt, idx) {
+  const { css, label } = classifyType(evt.type);
+  const dir = getDirection(evt);
+  const dirArrow = dir === 'to' ? '→' : '←';
+  const dirClass = dir === 'to' ? 'msg-dir-to' : 'msg-dir-from';
+  const cp = evt.charge_point || '';
+
+  // Build preview from data
+  const data = evt.data || {};
+  const dataStr = JSON.stringify(data);
+  const preview = dataStr.length > 85
+    ? dataStr.slice(0, 85).replace(/[{,]$/, '') + '…'
+    : dataStr;
+
+  const cpLink = cp ? `<a href="/remote/${encodeURIComponent(cp)}" onclick="event.stopPropagation()">${cp}</a>` : '—';
+
+  return `<div class="msg-row" onclick="showDetail(${idx})" data-idx="${idx}">
+    <span class="msg-ts">${fmtTime(evt.timestamp)}</span>
+    <span class="msg-dir ${dirClass}">${dirArrow}</span>
+    <span class="msg-cp" title="${cp}">${cpLink}</span>
+    <span class="msg-type ${css}">${label}</span>
+    <span class="msg-preview">${escapeHtml(preview)}</span>
+  </div>`;
+}
+
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+// ─── Render the full filtered list ───────────────────────────────────────────
+function renderLog() {
+  const log = document.getElementById('msg-log');
+  const empty = document.getElementById('msg-empty');
+
+  if (filteredMessages.length === 0) {
+    log.innerHTML = '';
+    empty.style.display = 'block';
+    log.appendChild(empty);
+    empty.textContent = allMessages.length === 0
+      ? 'Waiting for events…'
+      : 'No messages match current filters.';
+    return;
+  }
+
+  empty.style.display = 'none';
+
+  // Re-render only — batch as fragment
+  const frag = document.createDocumentFragment();
+  const tmp = document.createElement('div');
+  tmp.innerHTML = filteredMessages.map((evt, i) => renderRow(evt, allMessages.indexOf(evt))).join('');
+  while (tmp.firstChild) frag.appendChild(tmp.firstChild);
+
+  log.innerHTML = '';
+  log.appendChild(frag);
+
+  if (document.getElementById('auto-scroll').checked) {
+    log.scrollTop = log.scrollHeight;
+  }
+
+  updateCounters();
+}
+
+// ─── Append a single new row (efficient for live stream) ─────────────────────
+function appendRow(evt) {
+  const log = document.getElementById('msg-log');
+  const empty = document.getElementById('msg-empty');
+
+  if (empty.style.display !== 'none') {
+    empty.style.display = 'none';
+  }
+
+  const idx = allMessages.indexOf(evt);
+  const div = document.createElement('div');
+  div.innerHTML = renderRow(evt, idx);
+  const row = div.firstElementChild;
+  log.appendChild(row);
+
+  if (document.getElementById('auto-scroll').checked) {
+    log.scrollTop = log.scrollHeight;
+  }
+
+  // Trim rendered rows if too many
+  while (log.children.length > MAX_MESSAGES) {
+    log.removeChild(log.firstChild);
+  }
+}
+
+// ─── Add message to buffer ────────────────────────────────────────────────────
+function addMessage(evt) {
+  allMessages.push(evt);
+  if (allMessages.length > MAX_MESSAGES) allMessages.shift();
+
+  // Rate tracking
+  const now = Date.now();
+  recentTimestamps.push(now);
+  recentTimestamps = recentTimestamps.filter(t => now - t < 5000);
+
+  if (paused) {
+    pendingMessages.push(evt);
+    updateCounters();
+    return;
+  }
+
+  // Check if this event passes current filters
+  if (passesFilter(evt)) {
+    filteredMessages.push(evt);
+    if (filteredMessages.length > MAX_MESSAGES) filteredMessages.shift();
+    appendRow(evt);
+    updateCounters();
+  }
+}
+
+// ─── Filter logic ─────────────────────────────────────────────────────────────
+function passesFilter(evt) {
+  const cpFilter = document.getElementById('filter-charger').value;
+  const typeFilter = document.getElementById('filter-type').value;
+  const dirFilter = document.getElementById('filter-direction').value;
+  const searchFilter = document.getElementById('filter-search').value.trim().toLowerCase();
+
+  if (cpFilter && evt.charge_point !== cpFilter) return false;
+  if (typeFilter && evt.type !== typeFilter) return false;
+  if (dirFilter) {
+    const dir = getDirection(evt);
+    if (dirFilter === 'from' && dir !== 'from') return false;
+    if (dirFilter === 'to' && dir !== 'to') return false;
+  }
+  if (searchFilter) {
+    const payload = JSON.stringify(evt).toLowerCase();
+    if (!payload.includes(searchFilter)) return false;
+  }
+  return true;
+}
+
+function applyFilters() {
+  filteredMessages = allMessages.filter(passesFilter);
+  renderLog();
+}
+
+// ─── Counters ─────────────────────────────────────────────────────────────────
+function updateCounters() {
+  const total = allMessages.length;
+  const rate = (recentTimestamps.length / 5).toFixed(1);
+  document.getElementById('msg-counter').textContent = `${total.toLocaleString()} events`;
+  document.getElementById('msg-rate').textContent = `${rate} /sec`;
+
+  const shown = filteredMessages.length;
+  const fc = document.getElementById('filter-count');
+  if (shown !== total) {
+    fc.textContent = `${shown.toLocaleString()} shown`;
+  } else {
+    fc.textContent = '';
+  }
+
+  if (paused && pendingMessages.length > 0) {
+    document.getElementById('btn-pause').textContent = `Resume (${pendingMessages.length})`;
+  }
+}
+
+// ─── Pause / Resume ───────────────────────────────────────────────────────────
+function togglePause() {
+  paused = !paused;
+  const btn = document.getElementById('btn-pause');
+  if (paused) {
+    btn.textContent = 'Resume (0)';
+    btn.style.color = '#eab308';
+    btn.style.borderColor = '#78350f';
+  } else {
+    btn.textContent = 'Pause';
+    btn.style.color = '#c0cdd8';
+    btn.style.borderColor = '#1e3450';
+    // Flush pending
+    pendingMessages.forEach(e => {
+      if (passesFilter(e)) {
+        filteredMessages.push(e);
+        appendRow(e);
+      }
+    });
+    pendingMessages = [];
+    updateCounters();
+  }
+}
+
+// ─── Clear ────────────────────────────────────────────────────────────────────
+function clearLog() {
+  allMessages = [];
+  filteredMessages = [];
+  pendingMessages = [];
+  recentTimestamps = [];
+  const log = document.getElementById('msg-log');
+  log.innerHTML = '';
+  const empty = document.getElementById('msg-empty');
+  empty.textContent = 'Cleared. Waiting for new events…';
+  empty.style.display = 'block';
+  log.appendChild(empty);
+  updateCounters();
+}
+
+// ─── Export ───────────────────────────────────────────────────────────────────
+function exportMessages() {
+  const data = JSON.stringify(filteredMessages, null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `ocpp-messages-${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ─── Detail panel ─────────────────────────────────────────────────────────────
+let detailEvt = null;
+
+function showDetail(idx) {
+  const evt = allMessages[idx];
+  if (!evt) return;
+  detailEvt = evt;
+
+  document.getElementById('detail-title').textContent = evt.type || 'unknown';
+  document.getElementById('detail-cp').textContent = evt.charge_point || '';
+
+  const dir = getDirection(evt);
+  const dirLabel = dir === 'to' ? '→ To charger' : '← From charger';
+  const ts = evt.timestamp ? new Date(evt.timestamp).toLocaleString() : '—';
+  const meta = [
+    `Time: ${ts}`,
+    `Direction: ${dirLabel}`,
+    evt.event_id ? `Event ID: ${evt.event_id}` : null,
+    evt.session_id ? `Session: ${evt.session_id}` : null,
+    evt.connector != null && evt.connector !== '' ? `Connector: ${evt.connector}` : null,
+    evt.simulated ? 'Simulated: true' : null,
+  ].filter(Boolean).join('   |   ');
+
+  document.getElementById('detail-meta').textContent = meta;
+  document.getElementById('detail-json').innerHTML = highlightJSON(evt);
+
+  document.getElementById('detail-panel').style.display = 'flex';
+  document.getElementById('detail-backdrop').style.display = 'block';
+}
+
+function closeDetail() {
+  document.getElementById('detail-panel').style.display = 'none';
+  document.getElementById('detail-backdrop').style.display = 'none';
+  detailEvt = null;
+}
+
+function copyDetail() {
+  if (!detailEvt) return;
+  navigator.clipboard.writeText(JSON.stringify(detailEvt, null, 2)).then(() => {
+    const btn = document.getElementById('btn-copy');
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+  });
+}
+
+// ─── Load historical events ───────────────────────────────────────────────────
+async function loadHistory() {
+  try {
+    const resp = await fetch('/partials/ocpp-messages?limit=200');
+    const data = await resp.json();
+    const events = (data.events || []).sort((a, b) =>
+      new Date(a.timestamp) - new Date(b.timestamp)
+    );
+    events.forEach(addMessage);
+    if (events.length === 0) {
+      document.getElementById('msg-empty').textContent = 'No historical events found. Waiting for live events…';
     }
+  } catch (e) {
+    console.warn('Failed to load history:', e);
+  }
+}
 
-    function addEvent(e) {
-        eventCount++;
-        const data = JSON.parse(e.data);
-        const time = new Date(data.timestamp).toLocaleTimeString();
-        const type = data.type;
-        const cp = data.charge_point || '';
+// ─── SSE connection ───────────────────────────────────────────────────────────
+function connectSSE() {
+  const coreApi = `${location.protocol}//${location.hostname}:8000`;
+  const url = coreApi + '/api/v1/events/stream';
 
-        let color = 'text-gray-300';
-        if (type.startsWith('session.start')) color = 'text-green-400';
-        else if (type.startsWith('session.stop')) color = 'text-yellow-400';
-        else if (type.startsWith('session.meter')) color = 'text-blue-400';
-        else if (type.startsWith('charger.boot')) color = 'text-purple-400';
-        else if (type.startsWith('charger.offline')) color = 'text-red-400';
-        else if (type.startsWith('auth')) color = 'text-cyan-400';
-        else if (type.startsWith('pki')) color = 'text-orange-400';
-        else if (type.startsWith('ops.alert')) color = 'text-red-500 font-bold';
+  if (sseSource) sseSource.close();
 
-        const line = document.createElement('div');
-        line.className = color;
-        line.textContent = `[${time}] ${type} ${cp} ${JSON.stringify(data.data)}`;
-        log.appendChild(line);
+  sseSource = new EventSource(url);
+  const statusEl = document.getElementById('conn-status');
 
-        // Auto-scroll
-        log.scrollTop = log.scrollHeight;
+  sseSource.onopen = () => {
+    statusEl.textContent = '● Connected';
+    statusEl.style.color = '#84BD00';
+  };
 
-        // Keep max 500 lines
-        while (log.children.length > 500) {
-            log.removeChild(log.firstChild);
-        }
-    }
+  sseSource.onerror = () => {
+    statusEl.textContent = '● Disconnected';
+    statusEl.style.color = '#ef4444';
+    sseSource.close();
+    setTimeout(connectSSE, 4000);
+  };
 
-    function clearEvents() {
-        log.innerHTML = '<div class="text-gray-500">Cleared. Waiting for events...</div>';
-        eventCount = 0;
-    }
+  // Generic message handler
+  sseSource.onmessage = (e) => {
+    try { addMessage(JSON.parse(e.data)); } catch {}
+  };
 
-    connectSSE();
+  // Named event types from the Core SSE stream
+  const eventTypes = [
+    'charger.boot', 'charger.online', 'charger.offline', 'charger.status', 'charger.heartbeat',
+    'session.start', 'session.meter', 'session.stop', 'session.cdr',
+    'auth.result', 'pki.cert.issued', 'ops.alert',
+  ];
+  eventTypes.forEach(type => {
+    sseSource.addEventListener(type, (e) => {
+      try { addMessage(JSON.parse(e.data)); } catch {}
+    });
+  });
+}
+
+// ─── Boot ─────────────────────────────────────────────────────────────────────
+loadHistory().then(() => {
+  connectSSE();
+});
 </script>
 {% endblock %}
