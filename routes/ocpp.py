@@ -17,7 +17,9 @@ async def ocpp_page(request: Request):
     try:
         data = await api("/chargers?limit=200")
         chargers = data.get("chargers", [])
-    except Exception:
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error("Failed to load chargers for OCPP viewer: %s", e)
         chargers = []
 
     return templates.TemplateResponse(request, "ocpp.html", context={
