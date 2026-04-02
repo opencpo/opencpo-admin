@@ -1,0 +1,67 @@
+<div id="modal-partner-detail" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+  <div style="background:#0a1221;border:1px solid #1e3450;border-radius:10px;padding:24px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid #15283f;">
+      <h2 style="font-size:16px;font-weight:600;color:#e8edf2;">Edit Partner</h2>
+      <button onclick="closeModal('modal-partner-detail')" style="color:#4a6580;background:none;border:none;font-size:18px;cursor:pointer;line-height:1;">&#x2715;</button>
+    </div>
+    <form id="edit-partner-form" hx-target="#edit-partner-result" hx-swap="innerHTML">
+      <div style="margin-bottom:12px;">
+        <label style="display:block;font-size:11px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Name</label>
+        <input id="edit-name" name="name" style="width:100%;padding:7px 10px;background:#111c2e;border:1px solid #1e3450;border-radius:6px;color:#c0cdd8;font-size:13px;">
+      </div>
+      <div style="margin-bottom:12px;">
+        <label style="display:block;font-size:11px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Versions URL</label>
+        <input id="edit-url" name="url" type="url" style="width:100%;padding:7px 10px;background:#111c2e;border:1px solid #1e3450;border-radius:6px;color:#c0cdd8;font-size:13px;">
+      </div>
+      <div style="margin-bottom:12px;">
+        <label style="display:block;font-size:11px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Their Token</label>
+        <input id="edit-token-b" name="token_b" placeholder="Leave blank to keep current" style="width:100%;padding:7px 10px;background:#111c2e;border:1px solid #1e3450;border-radius:6px;color:#c0cdd8;font-size:13px;font-family:monospace;">
+        <div style="font-size:11px;color:#3d5870;margin-top:3px;">Only fill in if updating — leave blank to keep the existing token.</div>
+      </div>
+      <div style="margin-bottom:12px;">
+        <label style="display:block;font-size:11px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Status</label>
+        <select id="edit-status" name="status" style="width:100%;padding:7px 10px;background:#111c2e;border:1px solid #1e3450;border-radius:6px;color:#c0cdd8;font-size:13px;">
+          <option value="">— keep current —</option>
+          <option value="active">Active</option>
+          <option value="pending">Pending</option>
+          <option value="suspended">Suspended</option>
+          <option value="disabled">Disabled</option>
+        </select>
+      </div>
+      <div style="border-top:1px solid #15283f;padding-top:12px;margin-bottom:4px;">
+        <div style="font-size:11px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;font-weight:600;">Roaming Tariff</div>
+        <div style="margin-bottom:10px;">
+          <label style="display:block;font-size:11px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Base Tariff</label>
+          <select name="base_tariff_id" id="edit-base-tariff" onchange="updateEditPreview()" style="width:100%;padding:7px 10px;background:#111c2e;border:1px solid #1e3450;border-radius:6px;color:#c0cdd8;font-size:13px;">
+            <option value="">— All tariffs —</option>
+            {% for t in tariffs %}
+            <option value="{{ t.id }}" data-energy="{{ t.energy_rate or 0 }}" data-flat="{{ t.flat_fee or 0 }}" data-time="{{ t.time_rate or 0 }}">{{ t.name }} ({{ "%.4f"|format(t.energy_rate or 0) }} €/kWh)</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
+          <div>
+            <label style="display:block;font-size:11px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">+ €/kWh</label>
+            <input name="roaming_fee_kwh" type="number" step="0.0001" min="0" id="edit-fee-kwh" oninput="updateEditPreview()" style="width:100%;padding:7px 10px;background:#111c2e;border:1px solid #1e3450;border-radius:6px;color:#c0cdd8;font-size:13px;font-family:monospace;">
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">+ Flat (€)</label>
+            <input name="roaming_fee_flat" type="number" step="0.01" min="0" id="edit-fee-flat" oninput="updateEditPreview()" style="width:100%;padding:7px 10px;background:#111c2e;border:1px solid #1e3450;border-radius:6px;color:#c0cdd8;font-size:13px;font-family:monospace;">
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">+ €/min</label>
+            <input name="roaming_fee_time" type="number" step="0.0001" min="0" id="edit-fee-time" oninput="updateEditPreview()" style="width:100%;padding:7px 10px;background:#111c2e;border:1px solid #1e3450;border-radius:6px;color:#c0cdd8;font-size:13px;font-family:monospace;">
+          </div>
+        </div>
+        <div id="edit-tariff-preview" style="font-size:11px;color:#4a6580;background:#060d18;border:1px solid #0d1b2e;border-radius:5px;padding:8px 10px;">—</div>
+      </div>
+      <div id="edit-partner-result" style="margin-bottom:12px;margin-top:12px;"></div>
+      <div style="display:flex;gap:10px;">
+        <button id="btn-delete-partner" type="button" style="padding:8px 14px;background:#7f1d1d33;border:1px solid #7f1d1d;color:#fca5a5;border-radius:6px;font-size:13px;cursor:pointer;">Remove</button>
+        <div style="flex:1;"></div>
+        <button type="button" onclick="closeModal('modal-partner-detail')" style="padding:8px 14px;background:#111c2e;border:1px solid #1e3450;color:#6b8299;border-radius:6px;font-size:13px;cursor:pointer;">Cancel</button>
+        <button type="submit" style="padding:8px 20px;background:#00B0E4;color:#050b14;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;">Save</button>
+      </div>
+    </form>
+  </div>
+</div>

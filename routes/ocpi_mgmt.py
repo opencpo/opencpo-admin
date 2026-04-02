@@ -34,10 +34,18 @@ async def ocpi_page(request: Request):
         logger.error("OCPI partners fetch failed: %s", e)
         partners = []
 
+    try:
+        tariff_data = await api("/tariffs")
+        tariffs = tariff_data.get("tariffs", [])
+    except Exception as e:
+        logger.error("Tariffs fetch failed: %s", e)
+        tariffs = []
+
     return templates.TemplateResponse(request, "ocpi.html", context={
-        "status": status,
+        "status":   status,
         "partners": partners,
-        "active": "ocpi",
+        "tariffs":  tariffs,
+        "active":   "ocpi",
     })
 
 
@@ -152,6 +160,17 @@ async def action_create_partner(request: Request):
     if token_b:
         body["token_b"] = token_b
 
+    # Roaming markup fields
+    if form.get("base_tariff_id", "").strip():
+        body["base_tariff_id"] = form.get("base_tariff_id").strip()
+    for fee_field in ("roaming_fee_kwh", "roaming_fee_flat", "roaming_fee_time"):
+        val = form.get(fee_field, "").strip()
+        if val:
+            try:
+                body[fee_field] = float(val)
+            except ValueError:
+                pass
+
     if not all([body["party_id"], body["country_code"], body["name"], body["url"]]):
         return HTMLResponse(
             '<div class="p-3 bg-red-900/50 border border-red-800 rounded text-red-300 text-sm">'
@@ -207,6 +226,23 @@ async def action_update_partner(request: Request, partner_id: int):
         val = form.get(field, "").strip()
         if val:
             body[field] = val
+
+    # Roaming markup — always include these (empty string means "clear/zero")
+    base_tariff_id = form.get("base_tariff_id", "").strip()
+    if base_tariff_id:
+        body["base_tariff_id"] = base_tariff_id
+    elif "base_tariff_id" in form:
+        body["base_tariff_id"] = None
+
+    for fee_field in ("roaming_fee_kwh", "roaming_fee_flat", "roaming_fee_time"):
+        val = form.get(fee_field, "").strip()
+        if val:
+            try:
+                body[fee_field] = float(val)
+            except ValueError:
+                pass
+        elif fee_field in form:
+            body[fee_field] = 0.0
 
     if not body:
         return HTMLResponse(

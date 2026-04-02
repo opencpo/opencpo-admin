@@ -4,7 +4,6 @@
 
 {% block content %}
 
-{# ── Page header ─────────────────────────────────────────────────────── #}
 <div class="flex justify-between items-start mb-4">
   <div>
     <h1 class="text-2xl font-bold">OCPI Roaming
@@ -26,7 +25,6 @@
   </div>
 </div>
 
-{# ── Identity + health strip ──────────────────────────────────────────── #}
 {% set identity = status.get("identity", {}) %}
 {% set partners_count = status.get("partners", {}) %}
 {% set ep_health = status.get("endpoints_health", "unknown") %}
@@ -81,7 +79,6 @@
   </div>
 </div>
 
-{# ── Legend ───────────────────────────────────────────────────────────── #}
 <p style="color:#4a6580;font-size:12px;margin-bottom:8px;">
   <span style="color:#84BD00;">● Active</span> = handshake complete, this partner can use your chargers
   &nbsp;&middot;&nbsp;
@@ -94,14 +91,12 @@
   <strong style="color:#c0cdd8;">eMSP</strong> = they provide subscriptions to drivers
 </p>
 
-{# ── Search ───────────────────────────────────────────────────────────── #}
 <div style="margin-bottom:12px;">
   <input type="text" id="partner-search" placeholder="Search by name, party ID, country, role..."
     oninput="applyFilters()"
     style="width:100%;padding:8px 14px;background:#0d1a2e;border:1px solid #1e3450;border-radius:8px;color:#c0cdd8;font-size:13px;">
 </div>
 
-{# ── Partner table ─────────────────────────────────────────────────────── #}
 <div style="background:#0a1221;border:1px solid #15283f;border-radius:10px;overflow:hidden;">
   <table style="width:100%;font-size:13px;border-collapse:collapse;">
     <thead>
@@ -111,6 +106,7 @@
         <th style="text-align:left;padding:10px 14px;">Role</th>
         <th style="text-align:left;padding:10px 14px;">Status</th>
         <th style="text-align:left;padding:10px 14px;">Token (theirs)</th>
+        <th style="text-align:left;padding:10px 14px;">Tariff</th>
         <th style="text-align:left;padding:10px 14px;">Last Sync</th>
         <th style="text-align:right;padding:10px 14px;">Actions</th>
       </tr>
@@ -150,6 +146,16 @@
           <td style="padding:10px 14px;font-family:monospace;font-size:11px;color:#4a6580;">
             {{ p.token_b_masked or "—" }}
           </td>
+          <td style="padding:10px 14px;font-size:11px;">
+            {% if p.base_tariff_id %}
+              <span style="color:#c0cdd8;font-family:monospace;">{{ p.base_tariff_id }}</span>
+              {% if p.roaming_fee_kwh %}
+                <span style="color:#4a6580;margin-left:4px;">+{{ "%.4f"|format(p.roaming_fee_kwh) }}/kWh</span>
+              {% endif %}
+            {% else %}
+              <span style="color:#3d5870;">All</span>
+            {% endif %}
+          </td>
           <td style="padding:10px 14px;font-size:11px;color:#4a6580;">
             {{ (p.last_sync or "")[:19].replace("T"," ") or "Never" }}
           </td>
@@ -177,7 +183,7 @@
               </button>
               {% endif %}
               <button
-                onclick="openEditModal({{ p.id }}, '{{ p.name|replace("'","\\'")|e }}', '{{ p.url|e }}', '{{ p.status }}')"
+                onclick="openEditModal({{ p.id }}, '{{ p.name|replace("'","\\'")|e }}', '{{ p.url|e }}', '{{ p.status }}', '{{ p.base_tariff_id or "" }}', {{ p.roaming_fee_kwh or 0 }}, {{ p.roaming_fee_flat or 0 }}, {{ p.roaming_fee_time or 0 }})"
                 style="padding:4px 10px;background:#111c2e;border:1px solid #1e3450;color:#6b8299;border-radius:5px;font-size:11px;cursor:pointer;"
                 title="Edit partner details">
                 Edit
@@ -188,7 +194,7 @@
         {% endfor %}
       {% else %}
       <tr>
-        <td colspan="7" style="padding:40px;text-align:center;color:#3d5870;font-size:13px;">
+        <td colspan="8" style="padding:40px;text-align:center;color:#3d5870;font-size:13px;">
           No roaming partners yet.
           <br><br>
           <span style="font-size:12px;line-height:1.7;">
@@ -202,127 +208,10 @@
   </table>
 </div>
 
-{# ── Add Partner Modal ─────────────────────────────────────────────────── #}
-<div id="modal-add-partner" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-  <div style="background:#0a1221;border:1px solid #1e3450;border-radius:10px;padding:24px;width:100%;max-width:480px;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid #15283f;">
-      <h2 style="font-size:16px;font-weight:600;color:#e8edf2;">Add Roaming Partner</h2>
-      <button onclick="closeModal('modal-add-partner')" style="color:#4a6580;background:none;border:none;font-size:18px;cursor:pointer;line-height:1;">&#x2715;</button>
-    </div>
-    <p style="font-size:12px;color:#4a6580;margin-bottom:16px;line-height:1.6;">
-      Register a partner manually. You'll receive a token to send them — once they complete
-      the OCPI handshake, the status will move from Pending to Active automatically.
-    </p>
-    <form hx-post="/action/ocpi/partner/create" hx-target="#add-partner-result" hx-swap="innerHTML">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
-        <div>
-          <label style="display:block;font-size:11px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Name <span style="color:#ef4444;">*</span></label>
-          <input name="name" required placeholder="e.g. Charge Network BV"
-            style="width:100%;padding:7px 10px;background:#111c2e;border:1px solid #1e3450;border-radius:6px;color:#c0cdd8;font-size:13px;">
-        </div>
-        <div>
-          <label style="display:block;font-size:11px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Role</label>
-          <select name="role"
-            style="width:100%;padding:7px 10px;background:#111c2e;border:1px solid #1e3450;border-radius:6px;color:#c0cdd8;font-size:13px;">
-            <option value="EMSP">eMSP — subscription provider</option>
-            <option value="CPO">CPO — fellow operator</option>
-            <option value="HUB">HUB — roaming hub</option>
-          </select>
-        </div>
-        <div>
-          <label style="display:block;font-size:11px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Country Code <span style="color:#ef4444;">*</span></label>
-          <input name="country_code" required maxlength="2" placeholder="NL"
-            style="width:100%;padding:7px 10px;background:#111c2e;border:1px solid #1e3450;border-radius:6px;color:#c0cdd8;font-size:13px;font-family:monospace;text-transform:uppercase;">
-        </div>
-        <div>
-          <label style="display:block;font-size:11px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Party ID <span style="color:#ef4444;">*</span></label>
-          <input name="party_id" required maxlength="3" placeholder="ABC"
-            style="width:100%;padding:7px 10px;background:#111c2e;border:1px solid #1e3450;border-radius:6px;color:#c0cdd8;font-size:13px;font-family:monospace;text-transform:uppercase;">
-        </div>
-      </div>
-      <div style="margin-bottom:12px;">
-        <label style="display:block;font-size:11px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Their Versions URL <span style="color:#ef4444;">*</span></label>
-        <input name="url" required type="url" placeholder="https://partner.example.com/ocpi/versions"
-          style="width:100%;padding:7px 10px;background:#111c2e;border:1px solid #1e3450;border-radius:6px;color:#c0cdd8;font-size:13px;">
-        <div style="font-size:11px;color:#3d5870;margin-top:4px;">The OCPI entry-point URL they gave you — we use it to test the connection and discover their modules.</div>
-      </div>
-      <div style="margin-bottom:16px;">
-        <label style="display:block;font-size:11px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Their Token (optional)</label>
-        <input name="token_b" placeholder="Leave blank if not yet known"
-          style="width:100%;padding:7px 10px;background:#111c2e;border:1px solid #1e3450;border-radius:6px;color:#c0cdd8;font-size:13px;font-family:monospace;">
-        <div style="font-size:11px;color:#3d5870;margin-top:4px;">The token they gave you — needed to call their endpoints. Can be set after the handshake.</div>
-      </div>
-      <div id="add-partner-result" style="margin-bottom:12px;"></div>
-      <div style="display:flex;gap:10px;">
-        <button type="submit"
-          style="flex:1;padding:8px;background:#16a34a;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">
-          Register Partner
-        </button>
-        <button type="button" onclick="closeModal('modal-add-partner')"
-          style="flex:1;padding:8px;background:#111c2e;border:1px solid #1e3450;color:#6b8299;border-radius:6px;font-size:13px;cursor:pointer;">
-          Cancel
-        </button>
-      </div>
-    </form>
-  </div>
-</div>
+{% include 'partials/ocpi_modal_add.html' %}
 
-{# ── Edit / Detail Modal ───────────────────────────────────────────────── #}
-<div id="modal-partner-detail" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-  <div style="background:#0a1221;border:1px solid #1e3450;border-radius:10px;padding:24px;width:100%;max-width:480px;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid #15283f;">
-      <h2 style="font-size:16px;font-weight:600;color:#e8edf2;">Edit Partner</h2>
-      <button onclick="closeModal('modal-partner-detail')" style="color:#4a6580;background:none;border:none;font-size:18px;cursor:pointer;line-height:1;">&#x2715;</button>
-    </div>
-    <form id="edit-partner-form" hx-target="#edit-partner-result" hx-swap="innerHTML">
-      <div style="margin-bottom:12px;">
-        <label style="display:block;font-size:11px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Name</label>
-        <input id="edit-name" name="name"
-          style="width:100%;padding:7px 10px;background:#111c2e;border:1px solid #1e3450;border-radius:6px;color:#c0cdd8;font-size:13px;">
-      </div>
-      <div style="margin-bottom:12px;">
-        <label style="display:block;font-size:11px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Versions URL</label>
-        <input id="edit-url" name="url" type="url"
-          style="width:100%;padding:7px 10px;background:#111c2e;border:1px solid #1e3450;border-radius:6px;color:#c0cdd8;font-size:13px;">
-      </div>
-      <div style="margin-bottom:12px;">
-        <label style="display:block;font-size:11px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Their Token</label>
-        <input id="edit-token-b" name="token_b" placeholder="Leave blank to keep current"
-          style="width:100%;padding:7px 10px;background:#111c2e;border:1px solid #1e3450;border-radius:6px;color:#c0cdd8;font-size:13px;font-family:monospace;">
-        <div style="font-size:11px;color:#3d5870;margin-top:3px;">Only fill in if updating — leave blank to keep the existing token.</div>
-      </div>
-      <div style="margin-bottom:16px;">
-        <label style="display:block;font-size:11px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Status</label>
-        <select id="edit-status" name="status"
-          style="width:100%;padding:7px 10px;background:#111c2e;border:1px solid #1e3450;border-radius:6px;color:#c0cdd8;font-size:13px;">
-          <option value="">— keep current —</option>
-          <option value="active">Active</option>
-          <option value="pending">Pending</option>
-          <option value="suspended">Suspended</option>
-          <option value="disabled">Disabled</option>
-        </select>
-      </div>
-      <div id="edit-partner-result" style="margin-bottom:12px;"></div>
-      <div style="display:flex;gap:10px;">
-        <button id="btn-delete-partner" type="button"
-          style="padding:8px 14px;background:#7f1d1d33;border:1px solid #7f1d1d;color:#fca5a5;border-radius:6px;font-size:13px;cursor:pointer;">
-          Remove
-        </button>
-        <div style="flex:1;"></div>
-        <button type="button" onclick="closeModal('modal-partner-detail')"
-          style="padding:8px 14px;background:#111c2e;border:1px solid #1e3450;color:#6b8299;border-radius:6px;font-size:13px;cursor:pointer;">
-          Cancel
-        </button>
-        <button type="submit"
-          style="padding:8px 20px;background:#00B0E4;color:#050b14;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;">
-          Save
-        </button>
-      </div>
-    </form>
-  </div>
-</div>
+{% include 'partials/ocpi_modal_edit.html' %}
 
-{# ── Log link ─────────────────────────────────────────────────────────── #}
 <div style="margin-top:16px;padding-top:12px;border-top:1px solid #0d1b2e;font-size:12px;color:#3d5870;">
   <a href="/ocpi/log" style="color:#3d5870;text-decoration:none;">View OCPI request log</a>
   &nbsp;&middot;&nbsp;
@@ -339,12 +228,23 @@ function closeModal(id) {
   document.getElementById(id).classList.add('hidden');
 }
 
-function openEditModal(id, name, url, status) {
+function openEditModal(id, name, url, status, baseTariffId, feeKwh, feeFlat, feeTime) {
   document.getElementById('edit-name').value = name;
   document.getElementById('edit-url').value = url;
   document.getElementById('edit-token-b').value = '';
   document.getElementById('edit-status').value = '';
   document.getElementById('edit-partner-result').innerHTML = '';
+
+  // Roaming markup
+  const tariffSel = document.getElementById('edit-base-tariff');
+  if (tariffSel) tariffSel.value = baseTariffId || '';
+  const feeKwhEl  = document.getElementById('edit-fee-kwh');
+  const feeFlatEl = document.getElementById('edit-fee-flat');
+  const feeTimeEl = document.getElementById('edit-fee-time');
+  if (feeKwhEl)  feeKwhEl.value  = feeKwh  || 0;
+  if (feeFlatEl) feeFlatEl.value = feeFlat || 0;
+  if (feeTimeEl) feeTimeEl.value = feeTime || 0;
+  updateEditPreview();
 
   const form = document.getElementById('edit-partner-form');
   form.setAttribute('hx-post', '/action/ocpi/partner/update/' + id);
@@ -358,6 +258,50 @@ function openEditModal(id, name, url, status) {
   htmx.process(delBtn);
 
   openModal('modal-partner-detail');
+}
+
+function _calcPreview(tariffSel, feeKwhEl, feeFlatEl, feeTimeEl) {
+  if (!tariffSel || !tariffSel.value) return '— No specific tariff assigned (all tariffs will be served)';
+  const opt = tariffSel.options[tariffSel.selectedIndex];
+  const baseEnergy = parseFloat(opt.dataset.energy || 0);
+  const baseFlat   = parseFloat(opt.dataset.flat   || 0);
+  const baseTime   = parseFloat(opt.dataset.time   || 0);
+  const addKwh  = parseFloat(feeKwhEl  ? feeKwhEl.value  : 0) || 0;
+  const addFlat = parseFloat(feeFlatEl ? feeFlatEl.value : 0) || 0;
+  const addTime = parseFloat(feeTimeEl ? feeTimeEl.value : 0) || 0;
+  const totalEnergy = baseEnergy + addKwh;
+  const totalFlat   = baseFlat   + addFlat;
+  const totalTime   = baseTime   + addTime;
+  let parts = [];
+  if (totalEnergy > 0) parts.push(`${totalEnergy.toFixed(4)} €/kWh`);
+  if (totalFlat   > 0) parts.push(`${totalFlat.toFixed(2)} € flat`);
+  if (totalTime   > 0) parts.push(`${totalTime.toFixed(4)} €/min`);
+  const baseName = opt.textContent.split('(')[0].trim();
+  return `Partner sees: <strong style="color:#e8edf2;">${parts.join(' + ') || '—'}</strong>`
+       + `<span style="color:#3d5870;margin-left:8px;">(base: ${baseName}`
+       + (addKwh || addFlat || addTime ? ` + your markup` : '') + `)</span>`;
+}
+
+function updateAddPreview() {
+  const el = document.getElementById('add-tariff-preview');
+  if (!el) return;
+  el.innerHTML = _calcPreview(
+    document.getElementById('add-base-tariff'),
+    document.getElementById('add-fee-kwh'),
+    document.getElementById('add-fee-flat'),
+    document.getElementById('add-fee-time'),
+  );
+}
+
+function updateEditPreview() {
+  const el = document.getElementById('edit-tariff-preview');
+  if (!el) return;
+  el.innerHTML = _calcPreview(
+    document.getElementById('edit-base-tariff'),
+    document.getElementById('edit-fee-kwh'),
+    document.getElementById('edit-fee-flat'),
+    document.getElementById('edit-fee-time'),
+  );
 }
 
 function applyFilters() {

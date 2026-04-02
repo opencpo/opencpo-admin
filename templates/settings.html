@@ -260,6 +260,95 @@
         </form>
     </div>
 
+    <!-- ── OCPI Identity ────────────────────────────────────────────── -->
+    <div class="bg-gray-900 rounded-lg border border-gray-800">
+        <div class="p-4 border-b border-gray-800 flex items-center justify-between">
+            <div>
+                <h2 class="text-base font-semibold">🌐 OCPI Identity</h2>
+                <p class="text-xs text-gray-500 mt-0.5">Your operator identity advertised to roaming partners via OCPI.</p>
+            </div>
+            {% if ocpi.operator_name and ocpi.base_url %}
+                <span class="text-xs px-2 py-1 rounded bg-green-900/50 border border-green-800 text-green-300">Configured</span>
+            {% else %}
+                <span class="text-xs px-2 py-1 rounded bg-yellow-900/50 border border-yellow-800 text-yellow-300">Not configured</span>
+            {% endif %}
+        </div>
+        <form hx-post="/action/settings/ocpi"
+              hx-target="#ocpi-result"
+              hx-swap="innerHTML"
+              class="p-4 space-y-4">
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Country Code</label>
+                    <input name="country_code" type="text" maxlength="2"
+                        value="{{ ocpi.country_code or 'NL' }}"
+                        placeholder="NL"
+                        class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm font-mono uppercase">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Party ID</label>
+                    <input name="party_id" type="text" maxlength="3"
+                        value="{{ ocpi.party_id or 'OCP' }}"
+                        placeholder="OCP"
+                        class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm font-mono uppercase">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Role</label>
+                    <select name="role"
+                        class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm">
+                        <option value="CPO"  {% if ocpi.role == 'CPO'  %}selected{% endif %}>CPO — Charge Point Operator</option>
+                        <option value="EMSP" {% if ocpi.role == 'EMSP' %}selected{% endif %}>eMSP — Mobility Service Provider</option>
+                        <option value="HUB"  {% if ocpi.role == 'HUB'  %}selected{% endif %}>HUB — Roaming Hub</option>
+                    </select>
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">Operator Name</label>
+                <input name="operator_name" type="text"
+                    value="{{ ocpi.operator_name or '' }}"
+                    placeholder="e.g. Stroomlijnen BV"
+                    class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm">
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">eMSP Country Code</label>
+                    <input name="emsp_country_code" type="text" maxlength="2"
+                        value="{{ ocpi.emsp_country_code or 'NL' }}"
+                        class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm font-mono uppercase">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">eMSP Party ID</label>
+                    <input name="emsp_party_id" type="text" maxlength="3"
+                        value="{{ ocpi.emsp_party_id or 'OCP' }}"
+                        class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm font-mono uppercase">
+                </div>
+            </div>
+            <div class="grid grid-cols-3 gap-4">
+                <div class="col-span-2">
+                    <label class="block text-xs text-gray-400 mb-1">Base URL</label>
+                    <input name="base_url" type="url"
+                        value="{{ ocpi.base_url or '' }}"
+                        placeholder="https://ocpi.example.com"
+                        class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm font-mono">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Versions Path</label>
+                    <input name="versions_path" type="text"
+                        value="{{ ocpi.versions_path or '/ocpi/versions' }}"
+                        placeholder="/ocpi/versions"
+                        class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm font-mono">
+                </div>
+            </div>
+            <div id="ocpi-result"></div>
+            <div class="pt-1">
+                <button type="submit"
+                    class="px-5 py-2 bg-brand-green text-black font-bold rounded-lg text-sm hover:opacity-90 transition-opacity">
+                    Save OCPI Identity
+                </button>
+            </div>
+        </form>
+    </div>
+
 </div><!-- /max-w-3xl -->
 
 <script>

@@ -23,12 +23,18 @@ async def settings_page(request: Request):
     sms  = data.get("sms",  {"provider": "demo"})
     smtp = data.get("smtp", {"port": 587, "tls": True})
     otp  = data.get("otp",  {"enabled": True, "demo_mode": False, "code_length": 6, "ttl_seconds": 300})
+    ocpi = data.get("ocpi", {
+        "country_code": "NL", "party_id": "OCP", "role": "CPO",
+        "operator_name": "OpenCPO", "emsp_country_code": "NL", "emsp_party_id": "OCP",
+        "base_url": "", "versions_path": "/ocpi/versions",
+    })
 
     return templates.TemplateResponse(request, "settings.html", {
         "active": "settings",
         "sms":    sms,
         "smtp":   smtp,
         "otp":    otp,
+        "ocpi":   ocpi,
     })
 
 
@@ -117,6 +123,29 @@ async def action_save_otp(request: Request):
     try:
         await api("/settings/otp", method="PUT", json={"value": body})
         return HTMLResponse(_ok("OTP settings saved"))
+    except Exception as exc:
+        return HTMLResponse(_err(str(exc)))
+
+
+# ── OCPI Identity ────────────────────────────────────────────────────────
+
+@router.post("/action/settings/ocpi", response_class=HTMLResponse)
+async def action_save_ocpi(request: Request):
+    """Save OCPI identity settings via Core API."""
+    form = await request.form()
+    body = {
+        "country_code":      form.get("country_code", "NL").strip().upper()[:2],
+        "party_id":          form.get("party_id",     "OCP").strip().upper()[:3],
+        "role":              form.get("role",          "CPO").strip().upper(),
+        "operator_name":     form.get("operator_name", "").strip(),
+        "emsp_country_code": form.get("emsp_country_code", "NL").strip().upper()[:2],
+        "emsp_party_id":     form.get("emsp_party_id", "OCP").strip().upper()[:3],
+        "base_url":          form.get("base_url",      "").strip().rstrip("/"),
+        "versions_path":     form.get("versions_path", "/ocpi/versions").strip(),
+    }
+    try:
+        await api("/settings/ocpi", method="PUT", json={"value": body})
+        return HTMLResponse(_ok("OCPI identity saved"))
     except Exception as exc:
         return HTMLResponse(_err(str(exc)))
 

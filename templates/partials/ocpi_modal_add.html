@@ -1,0 +1,76 @@
+<div id="modal-add-partner" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+  <div style="background:#0a1221;border:1px solid #1e3450;border-radius:10px;padding:24px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid #15283f;">
+      <h2 style="font-size:16px;font-weight:600;color:#e8edf2;">Add Roaming Partner</h2>
+      <button onclick="closeModal('modal-add-partner')" style="color:#4a6580;background:none;border:none;font-size:18px;cursor:pointer;line-height:1;">&#x2715;</button>
+    </div>
+    <p style="font-size:12px;color:#4a6580;margin-bottom:16px;line-height:1.6;">Register a partner manually. You'll receive a token to send them — once they complete the OCPI handshake, the status moves to Active automatically.</p>
+    <form hx-post="/action/ocpi/partner/create" hx-target="#add-partner-result" hx-swap="innerHTML">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+        <div>
+          <label style="display:block;font-size:11px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Name <span style="color:#ef4444;">*</span></label>
+          <input name="name" required placeholder="e.g. Charge Network BV" style="width:100%;padding:7px 10px;background:#111c2e;border:1px solid #1e3450;border-radius:6px;color:#c0cdd8;font-size:13px;">
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Role</label>
+          <select name="role" style="width:100%;padding:7px 10px;background:#111c2e;border:1px solid #1e3450;border-radius:6px;color:#c0cdd8;font-size:13px;">
+            <option value="EMSP">eMSP — subscription provider</option>
+            <option value="CPO">CPO — fellow operator</option>
+            <option value="HUB">HUB — roaming hub</option>
+          </select>
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Country Code <span style="color:#ef4444;">*</span></label>
+          <input name="country_code" required maxlength="2" placeholder="NL" style="width:100%;padding:7px 10px;background:#111c2e;border:1px solid #1e3450;border-radius:6px;color:#c0cdd8;font-size:13px;font-family:monospace;text-transform:uppercase;">
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Party ID <span style="color:#ef4444;">*</span></label>
+          <input name="party_id" required maxlength="3" placeholder="ABC" style="width:100%;padding:7px 10px;background:#111c2e;border:1px solid #1e3450;border-radius:6px;color:#c0cdd8;font-size:13px;font-family:monospace;text-transform:uppercase;">
+        </div>
+      </div>
+      <div style="margin-bottom:12px;">
+        <label style="display:block;font-size:11px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Their Versions URL <span style="color:#ef4444;">*</span></label>
+        <input name="url" required type="url" placeholder="https://partner.example.com/ocpi/versions" style="width:100%;padding:7px 10px;background:#111c2e;border:1px solid #1e3450;border-radius:6px;color:#c0cdd8;font-size:13px;">
+        <div style="font-size:11px;color:#3d5870;margin-top:4px;">The OCPI entry-point URL they gave you — used to test the connection and discover modules.</div>
+      </div>
+      <div style="margin-bottom:12px;">
+        <label style="display:block;font-size:11px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Their Token (optional)</label>
+        <input name="token_b" placeholder="Leave blank if not yet known" style="width:100%;padding:7px 10px;background:#111c2e;border:1px solid #1e3450;border-radius:6px;color:#c0cdd8;font-size:13px;font-family:monospace;">
+        <div style="font-size:11px;color:#3d5870;margin-top:4px;">Their token — needed to call their endpoints. Can be set after the handshake.</div>
+      </div>
+      <div style="border-top:1px solid #15283f;padding-top:14px;margin-bottom:4px;">
+        <div style="font-size:11px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;font-weight:600;">Roaming Tariff</div>
+        <div style="margin-bottom:10px;">
+          <label style="display:block;font-size:11px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Base Tariff</label>
+          <select name="base_tariff_id" id="add-base-tariff" onchange="updateAddPreview()" style="width:100%;padding:7px 10px;background:#111c2e;border:1px solid #1e3450;border-radius:6px;color:#c0cdd8;font-size:13px;">
+            <option value="">— All tariffs (no specific assignment) —</option>
+            {% for t in tariffs %}
+            <option value="{{ t.id }}" data-energy="{{ t.energy_rate or 0 }}" data-flat="{{ t.flat_fee or 0 }}" data-time="{{ t.time_rate or 0 }}">{{ t.name }} ({{ "%.4f"|format(t.energy_rate or 0) }} €/kWh)</option>
+            {% endfor %}
+          </select>
+          <div style="font-size:11px;color:#3d5870;margin-top:3px;">Leave blank to expose all tariffs to this partner.</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
+          <div>
+            <label style="display:block;font-size:11px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">+ €/kWh</label>
+            <input name="roaming_fee_kwh" type="number" step="0.0001" min="0" value="0" id="add-fee-kwh" oninput="updateAddPreview()" style="width:100%;padding:7px 10px;background:#111c2e;border:1px solid #1e3450;border-radius:6px;color:#c0cdd8;font-size:13px;font-family:monospace;">
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">+ Flat (€)</label>
+            <input name="roaming_fee_flat" type="number" step="0.01" min="0" value="0" id="add-fee-flat" oninput="updateAddPreview()" style="width:100%;padding:7px 10px;background:#111c2e;border:1px solid #1e3450;border-radius:6px;color:#c0cdd8;font-size:13px;font-family:monospace;">
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;color:#3d5870;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">+ €/min</label>
+            <input name="roaming_fee_time" type="number" step="0.0001" min="0" value="0" id="add-fee-time" oninput="updateAddPreview()" style="width:100%;padding:7px 10px;background:#111c2e;border:1px solid #1e3450;border-radius:6px;color:#c0cdd8;font-size:13px;font-family:monospace;">
+          </div>
+        </div>
+        <div id="add-tariff-preview" style="font-size:11px;color:#4a6580;background:#060d18;border:1px solid #0d1b2e;border-radius:5px;padding:8px 10px;">Select a base tariff to see the effective rate preview.</div>
+      </div>
+      <div id="add-partner-result" style="margin-bottom:12px;margin-top:12px;"></div>
+      <div style="display:flex;gap:10px;">
+        <button type="submit" style="flex:1;padding:8px;background:#16a34a;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">Register Partner</button>
+        <button type="button" onclick="closeModal('modal-add-partner')" style="flex:1;padding:8px;background:#111c2e;border:1px solid #1e3450;color:#6b8299;border-radius:6px;font-size:13px;cursor:pointer;">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
