@@ -1,4 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <rect width="100" height="100" rx="20" fill="#0a0e1a"/>
-  <text y=".9em" font-size="85" x="5">⚡</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <rect width="32" height="32" rx="6" fill="#0b1a2e"/>
+  <text x="16" y="23" text-anchor="middle" font-family="-apple-system, 'SF Pro Display', 'Segoe UI', sans-serif" font-size="18" font-weight="700" letter-spacing="-0.5">
+    <tspan fill="#e8edf2">O</tspan><tspan fill="#4a6580">C</tspan>
+  </text>
 </svg>

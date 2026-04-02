@@ -1,8 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 140" width="120" height="140">
-  <!-- Circle background -->
-  <circle cx="60" cy="60" r="54" fill="#0C2340" stroke="#22c55e" stroke-width="3"/>
-  <!-- Lightning bolt -->
-  <polygon points="68,18 42,66 62,66 52,102 78,54 58,54" fill="#22c55e"/>
-  <!-- OpenCPO text -->
-  <text x="60" y="130" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif" font-size="16" font-weight="700" fill="#22c55e" letter-spacing="1">OpenCPO</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40" width="200" height="40">
+  <text x="0" y="30" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif" font-size="32" font-weight="600" letter-spacing="-0.5">
+    <tspan fill="#e8edf2">Open</tspan><tspan fill="#4a6580">CPO</tspan>
+  </text>
 </svg>
