@@ -26,58 +26,60 @@
         @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
         .status-online { color: #84BD00; animation: pulse-dot 2s infinite; }
         .status-offline { color: #ef4444; }
+        .top-link { color:#6b8299; text-decoration:none; padding:5px 12px; border-radius:6px; transition: all 0.15s; }
+        .top-link:hover { color:#c0cdd8; background:rgba(255,255,255,0.05); }
+        .top-link.active { color:#00B0E4; background:rgba(0,176,228,0.1); }
+        .nav-item { display:block; padding:8px 20px; color:#6b8299; text-decoration:none; font-size:13px; border-left:2px solid transparent; transition: all 0.15s; }
+        .nav-item:hover { color:#c0cdd8; background:rgba(255,255,255,0.03); }
+        .nav-item.active { color:#e8edf2; border-left-color:#00B0E4; background:rgba(0,176,228,0.05); }
+        .nav-section { font-size:10px; color:#3d5870; text-transform:uppercase; letter-spacing:1.5px; padding:16px 20px 6px; font-weight:600; }
     </style>
 </head>
 <body class="h-full bg-gray-950 text-gray-100">
-<!-- Top Nav -->
-<nav style="display:flex;align-items:center;gap:4px;padding:6px 16px;background:#0a1628;border-bottom:1px solid #1e3a5f;font-size:12px;position:sticky;top:0;z-index:9999;overflow-x:auto;white-space:nowrap;">
-  <span style="color:#e8edf2;font-weight:600;font-size:13px;margin-right:16px;">Open<span style="color:#4a6580;">CPO</span></span>
-  <a href="/" style="color:#00B0E4;text-decoration:none;padding:4px 10px;border-radius:6px;background:#00B0E422;">Admin</a>
-  <a href="https://app.opencpo.io" style="color:#9ca3af;text-decoration:none;padding:4px 10px;">Charge App</a>
-  <a href="https://farm.opencpo.io" style="color:#9ca3af;text-decoration:none;padding:4px 10px;">Charger Farm</a>
-  <a href="https://api.opencpo.io/docs" style="color:#9ca3af;text-decoration:none;padding:4px 10px;">API</a>
+
+<!-- Top Nav — platform-level navigation between apps -->
+<nav style="display:flex;align-items:center;gap:2px;padding:6px 16px;background:#050b14;border-bottom:1px solid #15283f;font-size:12px;position:sticky;top:0;z-index:9999;">
+  <span style="color:#e8edf2;font-weight:600;font-size:14px;margin-right:20px;letter-spacing:-0.3px;">Open<span style="color:#4a6580;">CPO</span></span>
+  <a href="/" class="top-link active" title="Fleet management dashboard">Admin</a>
+  <a href="https://app.opencpo.io" class="top-link" title="Driver-facing charging app">Charge App</a>
+  <a href="https://farm.opencpo.io" class="top-link" title="Virtual charger simulator">Charger Farm</a>
+  <a href="https://api.opencpo.io/docs" class="top-link" title="REST API documentation">API Docs</a>
 </nav>
 
-    <div class="flex h-full">
+    <div class="flex" style="height:calc(100vh - 37px);">
         <!-- Sidebar -->
-        <nav class="w-56 bg-brand-dark flex flex-col border-r border-gray-800">
-            <div class="p-5 border-b border-gray-700">
-                <div style="font-size:22px;font-weight:600;letter-spacing:-0.3px;line-height:1;">
+        <nav style="width:220px;background:#0a1221;border-right:1px solid #15283f;display:flex;flex-direction:column;flex-shrink:0;">
+            <div style="padding:24px 20px 20px;">
+                <div style="font-size:24px;font-weight:600;letter-spacing:-0.5px;line-height:1;">
                     <span style="color:#e8edf2;">Open</span><span style="color:#4a6580;">CPO</span>
                 </div>
-                <div style="font-size:11px;color:#4a6580;letter-spacing:1.5px;text-transform:uppercase;margin-top:6px;">Admin Panel</div>
+                <div style="font-size:10px;color:#3d5870;letter-spacing:2px;text-transform:uppercase;margin-top:8px;">Admin Panel</div>
             </div>
-            <div class="flex-1 py-4">
-                <a href="/" class="nav-link block px-4 py-2 hover:bg-gray-800 {% if active == 'dashboard' %}bg-gray-800 text-brand-green{% endif %}">
-                    📊 Dashboard
-                </a>
-                <a href="/chargers" class="nav-link block px-4 py-2 hover:bg-gray-800 {% if active == 'chargers' %}bg-gray-800 text-brand-green{% endif %}">
-                    🔌 Chargers
-                </a>
-                <a href="/sessions" class="nav-link block px-4 py-2 hover:bg-gray-800 {% if active == 'sessions' %}bg-gray-800 text-brand-green{% endif %}">
-                    ⚡ Sessions
-                </a>
-                <a href="/tariffs" class="nav-link block px-4 py-2 hover:bg-gray-800 {% if active == 'tariffs' %}bg-gray-800 text-brand-green{% endif %}">
-                    💰 Tariffs
-                </a>
-                <a href="/tokens" class="nav-link block px-4 py-2 hover:bg-gray-800 {% if active == 'tokens' %}bg-gray-800 text-brand-green{% endif %}">
-                    🏷️ Tokens
-                </a>
-                <a href="/groups" class="nav-link block px-4 py-2 hover:bg-gray-800 {% if active == 'groups' %}bg-gray-800 text-brand-green{% endif %}">
-                    👥 Groups
-                </a>
-                <a href="/ocpp" class="nav-link block px-4 py-2 hover:bg-gray-800 {% if active == 'ocpp' %}bg-gray-800 text-brand-green{% endif %}">
-                    📡 OCPP Messages
-                </a>
 
+            <div style="flex:1;overflow-y:auto;padding:8px 0;">
+                <div class="nav-section">Overview</div>
+                <a href="/" class="nav-item {% if active == 'dashboard' %}active{% endif %}">Dashboard</a>
+
+                <div class="nav-section">Fleet</div>
+                <a href="/chargers" class="nav-item {% if active == 'chargers' %}active{% endif %}">Chargers</a>
+                <a href="/sessions" class="nav-item {% if active == 'sessions' %}active{% endif %}">Charging Sessions</a>
+
+                <div class="nav-section">Configuration</div>
+                <a href="/tariffs" class="nav-item {% if active == 'tariffs' %}active{% endif %}">Tariffs & Pricing</a>
+                <a href="/tokens" class="nav-item {% if active == 'tokens' %}active{% endif %}">RFID Tokens</a>
+                <a href="/groups" class="nav-item {% if active == 'groups' %}active{% endif %}">Token Groups</a>
+
+                <div class="nav-section">Protocol</div>
+                <a href="/ocpp" class="nav-item {% if active == 'ocpp' %}active{% endif %}">OCPP Messages</a>
             </div>
-            <div class="p-4 border-t border-gray-700 text-xs text-gray-500">
-                OCPP Core v1.0
+
+            <div style="padding:16px 20px;border-top:1px solid #15283f;font-size:11px;color:#2d4a63;">
+                OpenCPO v1.0
             </div>
         </nav>
 
         <!-- Main Content -->
-        <main class="flex-1 overflow-auto">
+        <main style="flex:1;overflow-y:auto;">
             <div class="p-6">
                 {% block content %}{% endblock %}
             </div>
