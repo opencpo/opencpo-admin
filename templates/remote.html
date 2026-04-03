@@ -235,19 +235,39 @@ source.addEventListener('session.meter', (e) => {
     }
 });
 
-// OCPP log
+// OCPP log — load history first, then overlay live
+const ocppLog = document.getElementById('ocpp-log');
+const ocppColors = {'session.start':'text-green-400','session.stop':'text-yellow-400','session.meter':'text-blue-400','charger.boot':'text-purple-400','charger.offline':'text-red-400','auth.result':'text-cyan-400','charger.status':'text-gray-300'};
+
+function addLogLine(type, timestamp, data) {
+    const time = new Date(timestamp).toLocaleTimeString();
+    const line = document.createElement('div');
+    line.className = ocppColors[type] || 'text-gray-400';
+    line.textContent = `[${time}] ${type} ${JSON.stringify(data).slice(0,120)}`;
+    ocppLog.appendChild(line);
+    while (ocppLog.children.length > 200) ocppLog.removeChild(ocppLog.firstChild);
+}
+
+// Fetch recent history
+fetch(CORE + '/api/v1/events/history?charge_point=' + cpId + '&limit=50')
+    .then(r => r.json())
+    .then(data => {
+        ocppLog.innerHTML = '';
+        const events = (data.events || []).reverse();
+        if (events.length === 0) {
+            ocppLog.innerHTML = '<div class="text-gray-600">No OCPP messages recorded yet.</div>';
+        }
+        events.forEach(ev => addLogLine(ev.type, ev.timestamp, ev.data));
+        ocppLog.scrollTop = ocppLog.scrollHeight;
+    })
+    .catch(() => { ocppLog.innerHTML = '<div class="text-red-400">Failed to load event history.</div>'; });
+
+// Live events overlay
 ['charger.boot','charger.status','charger.offline','session.start','session.meter','session.stop','auth.result'].forEach(type => {
     source.addEventListener(type, (e) => {
         const d = JSON.parse(e.data);
-        const log = document.getElementById('ocpp-log');
-        const time = new Date(d.timestamp).toLocaleTimeString();
-        const colors = {'session.start':'text-green-400','session.stop':'text-yellow-400','session.meter':'text-blue-400','charger.boot':'text-purple-400','charger.offline':'text-red-400','auth.result':'text-cyan-400'};
-        const line = document.createElement('div');
-        line.className = colors[type] || 'text-gray-300';
-        line.textContent = `[${time}] ${type} ${JSON.stringify(d.data).slice(0,120)}`;
-        log.appendChild(line);
-        log.scrollTop = log.scrollHeight;
-        while (log.children.length > 200) log.removeChild(log.firstChild);
+        addLogLine(type, d.timestamp, d.data);
+        ocppLog.scrollTop = ocppLog.scrollHeight;
     });
 });
 
