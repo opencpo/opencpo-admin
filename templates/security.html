@@ -54,7 +54,7 @@
 
 <script>
     // Connect to event stream for security events
-    const coreApi = location.protocol + '//' + location.hostname + ':8000';
+    const coreApi = 'https://api.opencpo.io';
     const source = new EventSource(coreApi + '/api/v1/events/stream?types=ops.alert,pki.cert');
     const secDiv = document.getElementById('security-events');
 
