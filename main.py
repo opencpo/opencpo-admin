@@ -32,6 +32,7 @@ from routes.settings import router as settings_router
 from routes.ocpi_mgmt import router as ocpi_mgmt_router
 from routes.docs import router as docs_router
 from routes.network import router as network_router
+from routes.skins import router as skins_router
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -56,6 +57,7 @@ app.include_router(settings_router)
 app.include_router(ocpi_mgmt_router)
 app.include_router(docs_router)
 app.include_router(network_router)
+app.include_router(skins_router)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block title %}Skins{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex items-center justify-between flex-wrap gap-4">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-100">🎨 Skin Gallery</h1>
+        <p class="text-sm text-gray-500 mt-1">💡 Preview and activate charge app skins. White-label your charging experience.</p>
+        <p class="text-gray-500 text-sm mt-1">
+            <span class="text-brand-green font-semibold">{{ total }}</span> skins available
+            · Active: <span class="text-brand-green font-semibold">{{ active_skin }}</span>
+        </p>
+    </div>
+    <div class="relative">
+        <input
+            id="skin-search"
+            type="text"
+            placeholder="Search skin…"
+            oninput="filterSkins(this.value)"
+            class="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-brand-green w-64">
+        <span class="absolute right-3 top-2.5 text-gray-500 text-xs pointer-events-none">🔍</span>
+    </div>
+</div>
+
+<!-- Status message area -->
+<div id="skin-status" class="mb-4"></div>
+
+<!-- Skin grid -->
+<div id="skin-grid" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5">
+    {% for skin in skins %}
+    <div class="skin-card rounded-xl border {{ 'border-l-4 border-l-green-500 border-green-700' if skin.id == active_skin else 'border-gray-800' }} bg-gray-900 p-5 flex flex-col gap-3 transition-all"
+         data-name="{{ skin.name|lower }}">
+
+        <!-- Header: name + mode badge -->
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <h3 class="font-bold text-gray-100 text-lg">{{ skin.name }}</h3>
+                {% if skin.mode == 'light' %}
+                    <span class="text-xs px-2 py-0.5 rounded-full bg-yellow-900/50 text-yellow-300 border border-yellow-800">☀️ Light</span>
+                {% else %}
+                    <span class="text-xs px-2 py-0.5 rounded-full bg-gray-800 text-gray-400 border border-gray-700">🌙 Dark</span>
+                {% endif %}
+            </div>
+            {% if skin.id == active_skin %}
+                <span class="text-xs px-2 py-1 rounded-full bg-green-900/60 text-green-400 border border-green-800 font-semibold">✓ Active</span>
+            {% endif %}
+        </div>
+
+        <!-- Color palette -->
+        <div class="flex items-center gap-2">
+            <span class="text-xs text-gray-500 mr-1">Palette:</span>
+            {% for key in ['primary', 'secondary', 'background', 'card', 'border'] %}
+                {% if skin.colors.get(key) %}
+                <div class="relative group">
+                    <div class="w-7 h-7 rounded-full border border-gray-700 shadow-inner cursor-help"
+                         style="background: {{ skin.colors[key] }};"></div>
+                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-0.5 rounded bg-gray-800 text-gray-300 text-xs font-mono whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                        {{ key }}: {{ skin.colors[key] }}
+                    </div>
+                </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        <!-- Fonts -->
+        {% if skin.fonts %}
+        <div class="flex items-center gap-2 text-xs text-gray-500">
+            <span>Fonts:</span>
+            {% if skin.fonts.get('headline') %}
+                <span class="px-1.5 py-0.5 rounded bg-gray-800 text-gray-400 font-mono">{{ skin.fonts.headline }}</span>
+            {% endif %}
+            {% if skin.fonts.get('body') and skin.fonts.get('body') != skin.fonts.get('headline') %}
+                <span class="px-1.5 py-0.5 rounded bg-gray-800 text-gray-400 font-mono">{{ skin.fonts.body }}</span>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Preview thumbnails -->
+        {% if skin.previews %}
+        <div class="flex gap-2 overflow-x-auto py-1 -mx-1 px-1 scrollbar-thin">
+            {% for preview in skin.previews[:6] %}
+            <img
+                src="/skins/{{ skin.id }}/preview/{{ preview }}"
+                alt="{{ preview }}"
+                class="h-32 w-auto rounded-lg border border-gray-700 cursor-pointer hover:border-brand-green hover:scale-[1.02] transition-all flex-shrink-0 object-cover"
+                onclick="openLightbox(this.src, '{{ skin.name }} — {{ preview.replace('.png','').replace('_',' ').title() }}')"
+                loading="lazy"
+            />
+            {% endfor %}
+            {% if skin.previews|length > 6 %}
+                <div class="flex items-center justify-center h-32 w-16 rounded-lg border border-gray-700 bg-gray-800/50 text-gray-500 text-xs flex-shrink-0">
+                    +{{ skin.previews|length - 6 }}
+                </div>
+            {% endif %}
+        </div>
+        {% else %}
+        <div class="h-20 flex items-center justify-center rounded-lg border border-dashed border-gray-700 text-gray-600 text-sm">
+            No previews available
+        </div>
+        {% endif %}
+
+        <!-- Meta + actions -->
+        <div class="flex items-center justify-between mt-1">
+            <div class="text-xs text-gray-600">
+                v{{ skin.version }}
+                {% if skin.css_size %}· {{ (skin.css_size / 1024)|round(1) }}KB CSS{% endif %}
+                {% if skin.has_design %}· 📄 DESIGN.md{% endif %}
+            </div>
+
+            {% if skin.id == active_skin %}
+                <span class="text-xs text-green-500 font-medium">Currently active</span>
+            {% else %}
+                <button
+                    hx-post="/action/skins/activate/{{ skin.id }}"
+                    hx-target="#skin-status"
+                    hx-swap="innerHTML"
+                    class="px-4 py-1.5 rounded-lg text-sm font-semibold bg-gradient-to-r from-green-600 to-green-500 text-white hover:from-green-500 hover:to-green-400 transition-all active:scale-95">
+                    Activate
+                </button>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if not skins %}
+<div class="text-center py-16 text-gray-500">
+    <div class="text-4xl mb-4">🎨</div>
+    <h3 class="text-lg font-semibold text-gray-400">No skins found</h3>
+    <p class="text-sm mt-2">Add skins to the charge app's <code class="text-gray-400">skins/</code> directory.</p>
+</div>
+{% endif %}
+
+<!-- Lightbox modal -->
+<div id="lightbox" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 backdrop-blur-sm" onclick="closeLightbox(event)">
+    <div class="relative max-w-[90vw] max-h-[90vh]">
+        <img id="lightbox-img" src="" alt="" class="max-w-full max-h-[85vh] rounded-xl shadow-2xl" />
+        <div id="lightbox-caption" class="text-center text-gray-400 text-sm mt-3"></div>
+        <button onclick="closeLightbox()" class="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-gray-800 border border-gray-700 text-gray-400 hover:text-white flex items-center justify-center text-lg">×</button>
+    </div>
+</div>
+
+<script>
+function filterSkins(q) {
+    q = q.toLowerCase();
+    document.querySelectorAll('.skin-card').forEach(function(card) {
+        card.style.display = card.dataset.name.includes(q) ? '' : 'none';
+    });
+}
+
+function openLightbox(src, caption) {
+    var lb = document.getElementById('lightbox');
+    document.getElementById('lightbox-img').src = src;
+    document.getElementById('lightbox-caption').textContent = caption || '';
+    lb.classList.remove('hidden');
+    lb.classList.add('flex');
+}
+
+function closeLightbox(e) {
+    if (e && e.target !== document.getElementById('lightbox')) return;
+    var lb = document.getElementById('lightbox');
+    lb.classList.add('hidden');
+    lb.classList.remove('flex');
+}
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeLightbox();
+});
+</script>
+{% endblock %}
