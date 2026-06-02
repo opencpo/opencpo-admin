@@ -10,10 +10,16 @@ router = APIRouter()
 @router.get("/chargers", response_class=HTMLResponse)
 async def chargers_page(request: Request):
     """Charger management."""
-    data = await api("/chargers?limit=100")
+    try:
+        data = await api("/chargers?limit=100")
+        chargers = data.get("chargers", [])
+        total = data.get("total", 0)
+    except Exception:
+        chargers = []
+        total = 0
     return templates.TemplateResponse(request, "chargers.html", context={
-        "chargers": data.get("chargers", []),
-        "total": data.get("total", 0),
+        "chargers": chargers,
+        "total": total,
     })
 
 

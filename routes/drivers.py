@@ -30,8 +30,11 @@ async def _get_cert_status(email: str) -> dict:
 @router.get("/drivers", response_class=HTMLResponse)
 async def drivers_page(request: Request):
     """Driver accounts management — view and manage certs."""
-    accounts = await api("/driver-accounts")
-    account_list = accounts.get("accounts", [])
+    try:
+        accounts = await api("/driver-accounts")
+        account_list = accounts.get("accounts", [])
+    except Exception:
+        account_list = []
 
     # Enrich with cert status
     for acct in account_list:
@@ -39,7 +42,8 @@ async def drivers_page(request: Request):
 
     return templates.TemplateResponse(request, "drivers.html", {
         "accounts": account_list,
-        "total": accounts.get("total", 0),
+        "total": len(account_list),
+        "active": "drivers",
     })
 
 

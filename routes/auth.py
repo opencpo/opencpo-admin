@@ -45,12 +45,12 @@ async def login_post(
         if r.status_code == 200:
             token = data.get("token", "")
             user = data.get("user", {})
-            cookie_value = token
             response = RedirectResponse("/", status_code=302)
             response.set_cookie(
                 key="opencpo_session",
-                value=cookie_value,
+                value=token,
                 max_age=86400,          # 24 hours
+                path="/",               # available on every page
                 httponly=True,
                 samesite="lax",
             )

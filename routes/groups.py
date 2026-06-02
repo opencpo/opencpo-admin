@@ -13,9 +13,13 @@ router = APIRouter()
 @router.get("/groups", response_class=HTMLResponse)
 async def groups_page(request: Request):
     """Group management page."""
-    data = await api("/groups")
+    try:
+        data = await api("/groups")
+        groups = data.get("groups", [])
+    except Exception:
+        groups = []
     return templates.TemplateResponse(request, "groups.html", context={
-        "groups": data.get("groups", []),
+        "groups": groups,
     })
 
 

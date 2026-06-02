@@ -9,9 +9,15 @@ router = APIRouter()
 
 @router.get("/sessions", response_class=HTMLResponse)
 async def sessions_page(request: Request):
-    """Session monitoring."""
-    data = await api("/sessions?limit=100")
+    """Charging sessions overview."""
+    try:
+        data = await api("/sessions?limit=100")
+        sessions = data.get("sessions", [])
+        total = data.get("total", 0)
+    except Exception:
+        sessions = []
+        total = 0
     return templates.TemplateResponse(request, "sessions.html", context={
-        "sessions": data.get("sessions", []),
-        "total": data.get("total", 0),
+        "sessions": sessions,
+        "total": total,
     })

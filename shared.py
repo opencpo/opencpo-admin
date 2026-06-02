@@ -47,6 +47,7 @@ async def verify_session(request: Request) -> dict | None:
     """Verify the JWT session cookie against the core API. Returns user dict or None."""
     token = get_session_token(request)
     if not token:
+        logger.warning("verify_session: no opencpo_session cookie found")
         return None
     try:
         async with httpx.AsyncClient(base_url=CORE_API, timeout=5) as client:
@@ -56,8 +57,9 @@ async def verify_session(request: Request) -> dict | None:
             )
             if r.status_code == 200:
                 return r.json()
-    except Exception:
-        pass
+            logger.warning("verify_session: core /me returned %s", r.status_code)
+    except Exception as exc:
+        logger.warning("verify_session: exception calling core /me: %s", exc)
     return None
 
 

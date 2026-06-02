@@ -14,12 +14,20 @@ router = APIRouter()
 async def tariffs_page(request: Request):
     """Tariff configuration — manage pricing structures."""
     from datetime import datetime, timezone
-    tariff_data = await api("/tariffs")
-    charger_data = await api("/chargers?limit=100")
+    try:
+        tariff_data = await api("/tariffs")
+        tariffs = tariff_data.get("tariffs", [])
+    except Exception:
+        tariffs = []
+    try:
+        charger_data = await api("/chargers?limit=100")
+        chargers = charger_data.get("chargers", [])
+    except Exception:
+        chargers = []
     now_iso = datetime.now(timezone.utc).isoformat()
     return templates.TemplateResponse(request, "tariffs.html", context={
-        "tariffs": tariff_data.get("tariffs", []),
-        "chargers": charger_data.get("chargers", []),
+        "tariffs": tariffs,
+        "chargers": chargers,
         "now_iso": now_iso,
     })
 

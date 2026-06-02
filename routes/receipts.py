@@ -11,10 +11,16 @@ router = APIRouter()
 @router.get("/receipts", response_class=HTMLResponse)
 async def receipts_page(request: Request):
     """List all completed sessions with receipt download."""
-    data = await api("/public-sessions/receipts?limit=100")
+    try:
+        data = await api("/public-sessions/receipts?limit=100")
+        sessions = data.get("sessions", [])
+        total = data.get("total", 0)
+    except Exception:
+        sessions = []
+        total = 0
     return templates.TemplateResponse(request, "receipts.html", {
-        "sessions": data.get("sessions", []),
-        "total": data.get("total", 0),
+        "sessions": sessions,
+        "total": total,
         "active": "receipts",
     })
 

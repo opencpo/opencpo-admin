@@ -30,18 +30,31 @@ async def tokens_page(request: Request):
     if search:
         params += f"&search={search}"
 
-    token_data = await api(f"/tokens{params}")
-    tokens = token_data.get("tokens", [])
-    total = token_data.get("total", 0)
+    try:
+        token_data = await api(f"/tokens{params}")
+        tokens = token_data.get("tokens", [])
+        total = token_data.get("total", 0)
+    except Exception:
+        tokens = []
+        total = 0
 
-    groups_data = await api("/groups")
-    groups = groups_data.get("groups", [])
+    try:
+        groups_data = await api("/groups")
+        groups = groups_data.get("groups", [])
+    except Exception:
+        groups = []
 
-    all_tokens = await api("/tokens?limit=500")
-    all_list = all_tokens.get("tokens", [])
+    all_list = []
+    all_total = 0
+    try:
+        all_tokens = await api("/tokens?limit=500")
+        all_list = all_tokens.get("tokens", [])
+        all_total = all_tokens.get("total", len(all_list))
+    except Exception:
+        pass
     now_iso = datetime.utcnow().isoformat()
     stats = {
-        "total": all_tokens.get("total", len(all_list)),
+        "total": all_total,
         "active": sum(1 for t in all_list if t["status"] == "active"),
         "blocked": sum(1 for t in all_list if t["status"] == "blocked"),
         "expired": sum(1 for t in all_list if t["status"] == "expired" or (

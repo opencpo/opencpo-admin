@@ -22,13 +22,23 @@ def _parse_subject(subject: str) -> dict:
 @router.get("/pki", response_class=HTMLResponse)
 async def pki_page(request: Request):
     """PKI certificate dashboard."""
-    stats = await api("/pki/stats")
-    hierarchy = await api("/pki/ca-hierarchy")
-    chargers = await api("/chargers?limit=200")
+    try:
+        stats = await api("/pki/stats")
+    except Exception:
+        stats = {}
+    try:
+        hierarchy = await api("/pki/ca-hierarchy")
+    except Exception:
+        hierarchy = {}
+    try:
+        chargers = await api("/chargers?limit=200")
+        charger_ids = [c["id"] for c in chargers.get("chargers", [])]
+    except Exception:
+        charger_ids = []
     return templates.TemplateResponse(request, "pki.html", context={
         "stats": stats,
         "hierarchy": hierarchy,
-        "charger_ids": [c["id"] for c in chargers.get("chargers", [])],
+        "charger_ids": charger_ids,
     })
 
 

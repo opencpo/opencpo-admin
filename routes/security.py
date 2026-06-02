@@ -16,10 +16,15 @@ async def security_page(request: Request):
 @router.get("/features", response_class=HTMLResponse)
 async def features_page(request: Request):
     """Feature flag toggle panel."""
-    data = await api("/features")
-    details = data.get("details", [])
-    enabled = [f for f in details if f["enabled"]]
-    disabled = [f for f in details if not f["enabled"]]
+    try:
+        data = await api("/features")
+        details = data.get("details", [])
+        enabled = [f for f in details if f["enabled"]]
+        disabled = [f for f in details if not f["enabled"]]
+    except Exception:
+        details = []
+        enabled = []
+        disabled = []
     return templates.TemplateResponse(request, "features.html", context={
         "active": "features",
         "enabled_flags": enabled,
