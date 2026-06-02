@@ -47,9 +47,9 @@
 <nav style="display:flex;align-items:center;gap:2px;padding:8px 16px;background:#050b14;border-bottom:1px solid #15283f;font-size:13px;position:sticky;top:0;z-index:9999;">
   <span style="color:#e8edf2;font-weight:600;font-size:14px;margin-right:20px;letter-spacing:-0.3px;">Open<span style="color:#4a6580;">CPO</span></span>
   <a href="/" class="top-link active" title="Fleet management dashboard">Admin</a>
-  <a href="https://app.opencpo.io" class="top-link" title="Driver-facing charging app">Charge App</a>
-  <a href="https://farm.opencpo.io" class="top-link" title="Virtual charger simulator">Charger Farm</a>
-  <a href="https://api.opencpo.io/docs" class="top-link" title="REST API documentation">API Docs</a>
+  <a href="{{ charge_app_url }}" class="top-link" title="Driver-facing charging app">Charge App</a>
+  <a href="{{ charger_farm_url }}" class="top-link" title="Virtual charger simulator">Charger Farm</a>
+  <a href="{{ core_api_public_url }}/docs" class="top-link" title="REST API documentation">API Docs</a>
 </nav>
 
     <div class="flex" style="height:calc(100vh - 37px);">

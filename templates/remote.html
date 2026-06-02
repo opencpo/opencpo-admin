@@ -219,7 +219,7 @@ function showTab(name) {
 }
 
 // SSE for live data
-const CORE = 'https://api.opencpo.io';
+const CORE = '{{ core_api_public_url }}';
 const cpId = '{{ cp.id }}';
 const source = new EventSource(CORE + '/api/v1/events/chargers/' + cpId + '/live');
 

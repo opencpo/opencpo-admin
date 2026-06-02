@@ -13,7 +13,7 @@ from fastapi.templating import Jinja2Templates
 
 logger = logging.getLogger(__name__)
 
-# OCPP Core API
+# OCPP Core API (internal — used by server-side Python code)
 CORE_API = os.getenv("OCPP_CORE_API_URL", os.getenv("OCPP_CORE_API", "http://localhost:8000"))
 CORE_API_KEY = os.getenv("CORE_API_KEY", "")
 APP_TITLE = os.getenv("APP_TITLE", "OpenCPO Admin")
@@ -21,9 +21,18 @@ APP_TITLE = os.getenv("APP_TITLE", "OpenCPO Admin")
 # PKI data directory (shared volume with ocpp-core)
 PKI_DATA_DIR = os.getenv("PKI_DATA_DIR", "/app/data/pki")
 
+# Public URLs — used by the frontend (top nav, JS, docs links).
+# These MUST be configurable: never hardcode production domains.
+CHARGE_APP_URL = os.getenv("CHARGE_APP_URL", "https://app.opencpo.io")
+CHARGER_FARM_URL = os.getenv("CHARGER_FARM_URL", "https://farm.opencpo.io")
+CORE_API_PUBLIC_URL = os.getenv("CORE_API_PUBLIC_URL", "https://api.opencpo.io")
+
 # Templates (shared instance)
 templates = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "templates"))
 templates.env.globals["app_title"] = APP_TITLE
+templates.env.globals["charge_app_url"] = CHARGE_APP_URL
+templates.env.globals["charger_farm_url"] = CHARGER_FARM_URL
+templates.env.globals["core_api_public_url"] = CORE_API_PUBLIC_URL
 
 # ── Local JWT verification (avoids calling core /me on every request) ─────
 _JWT_SECRET = os.getenv("JWT_SECRET", os.getenv("CORE_API_KEY", "opencpo-admin-jwt-secret"))
