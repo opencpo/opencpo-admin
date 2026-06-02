@@ -46,7 +46,10 @@ async def verify_session(request: Request) -> dict | None:
         return None
     try:
         async with httpx.AsyncClient(base_url=CORE_API, timeout=5) as client:
-            r = await client.get(f"/api/v1/admin/auth/me?token={token}")
+            r = await client.get(
+                "/api/v1/admin/auth/me",
+                headers={"Authorization": f"Bearer {token}"}
+            )
             if r.status_code == 200:
                 return r.json()
     except Exception:

@@ -4,7 +4,7 @@
 
 FastAPI + Jinja2 + HTMX. No React, no npm, no build step.
 
-> ⚠️ **No built-in authentication.** Deploy behind a reverse proxy (nginx/Caddy) with mTLS or basic auth. Do not expose to the public internet without authentication.
+> ✅ **Built-in authentication.** JWT-based login with bcrypt password hashing. First-time setup wizard on first visit. No hardcoded credentials.
 
 ---
 
@@ -27,6 +27,23 @@ FastAPI + Jinja2 + HTMX. No React, no npm, no build step.
 
 ---
 
+## Authentication
+
+The admin panel uses JWT-based authentication against the OCPP Core API. On first access, you'll be redirected to `/setup` — a 6-step wizard where you create your admin account, configure the organization name, and set up SMTP. After setup, login uses email + password with bcrypt-hashed credentials stored in the `ocpp.users` table. Session tokens are stored as HTTP-only cookies (`opencpo_session`).
+
+### First-time Setup Flow
+
+1. Visit `http://localhost:8080` → redirected to `/setup`
+2. Step 1: Create admin account (email + password)
+3. Step 2: Configure organization name and public URL
+4. Step 3: SMTP settings (can be skipped)
+5. Step 4: PKI configuration (can be skipped)
+6. Step 5: Default pricing (can be skipped)
+7. Step 6: Feature flags (can be skipped)
+8. Redirected to `/login` — sign in with your new credentials
+
+All steps are skippable. You can return to `/setup` anytime to fill in missing configuration.
+
 ## Quick Start
 
 ### 1. Install dependencies
@@ -48,22 +65,21 @@ cp .env.example .env
 At minimum you need:
 
 ```bash
-DB_PASS=your_db_password
 OCPP_CORE_API=http://localhost:8000
 ```
 
 ### 3. Run
 
 ```bash
-# With .env file (recommended)
+# With .env file
 python-dotenv run -- python main.py
 
 # Or export vars manually
-export DB_PASS=secret OCPP_CORE_API=http://localhost:8000
+export OCPP_CORE_API=http://localhost:8000
 python main.py
 ```
 
-Open http://localhost:8080
+Open http://localhost:8080 — you'll be redirected to the setup wizard on first visit.
 
 ---
 
