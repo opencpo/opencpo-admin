@@ -23,15 +23,18 @@ PKI_DATA_DIR = os.getenv("PKI_DATA_DIR", "/app/data/pki")
 
 # Public URLs — used by the frontend (top nav, JS, docs links).
 # These MUST be configurable: never hardcode production domains.
-CHARGE_APP_URL = os.getenv("CHARGE_APP_URL", "https://app.opencpo.io")
-CHARGER_FARM_URL = os.getenv("CHARGER_FARM_URL", "https://farm.opencpo.io")
-CORE_API_PUBLIC_URL = os.getenv("CORE_API_PUBLIC_URL", "https://api.opencpo.io")
+# Default to localhost for local installs; set env vars for production/public deployments.
+CHARGE_APP_URL = os.getenv("CHARGE_APP_URL", "http://localhost:8003")
+CHARGER_FARM_URL = os.getenv("CHARGER_FARM_URL", "http://localhost:8087")
+COMPLIANCE_URL = os.getenv("COMPLIANCE_URL", "http://localhost:8090")
+CORE_API_PUBLIC_URL = os.getenv("CORE_API_PUBLIC_URL", "http://localhost:8000")
 
 # Templates (shared instance)
 templates = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "templates"))
 templates.env.globals["app_title"] = APP_TITLE
 templates.env.globals["charge_app_url"] = CHARGE_APP_URL
 templates.env.globals["charger_farm_url"] = CHARGER_FARM_URL
+templates.env.globals["compliance_url"] = COMPLIANCE_URL
 templates.env.globals["core_api_public_url"] = CORE_API_PUBLIC_URL
 
 # ── Local JWT verification (avoids calling core /me on every request) ─────
