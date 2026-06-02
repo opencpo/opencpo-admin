@@ -64,7 +64,9 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
 
 class SetupCheckMiddleware(BaseHTTPMiddleware):
-    """Check if platform setup is complete. Redirect to /setup if not."""
+    """Check if platform setup is complete. Redirect to /setup if not.
+    Runs BEFORE AuthMiddleware so that first-time visitors get the
+    setup wizard instead of the login page."""
 
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
@@ -72,16 +74,11 @@ class SetupCheckMiddleware(BaseHTTPMiddleware):
         if any(path == p or path.startswith(p) for p in _PUBLIC_PREFIXES):
             return await call_next(request)
 
-        # Only check for authenticated requests (AuthMiddleware handles unauthenticated)
-        user = await verify_session(request)
-        if user is None:
-            return await call_next(request)
-
-        # Check setup status
+        # Check setup status — redirect ANYONE (authed or not) to /setup
+        # if the platform hasn't been configured yet.
         try:
             status = await get_setup_status()
             if not status.get("complete", False):
-                # Redirect to setup wizard
                 return RedirectResponse("/setup", status_code=302)
         except Exception:
             # If core is unreachable, let the request through
@@ -91,8 +88,8 @@ class SetupCheckMiddleware(BaseHTTPMiddleware):
 
 
 app = FastAPI(title=APP_TITLE, docs_url=None, redoc_url=None)
-app.add_middleware(SetupCheckMiddleware)
 app.add_middleware(AuthMiddleware)
+app.add_middleware(SetupCheckMiddleware)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Register all route modules
