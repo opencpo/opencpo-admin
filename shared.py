@@ -65,10 +65,13 @@ async def api(path: str, method: str = "GET", json_data: dict = None,
               token: str = None) -> dict | httpx.Response:
     """Call OCPP Core API. Returns parsed JSON response.
     Set raw=True to get the raw httpx.Response object.
+    Sends CORE_API_KEY as X-API-Key header if available.
     """
     headers = {}
     if token:
         headers["Authorization"] = f"Bearer {token}"
+    if CORE_API_KEY:
+        headers["X-API-Key"] = CORE_API_KEY
     async with httpx.AsyncClient(base_url=CORE_API, timeout=10, headers=headers) as client:
         if method == "GET":
             r = await client.get(f"/api/v1{path}")

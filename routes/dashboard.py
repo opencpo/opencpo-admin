@@ -10,10 +10,22 @@ router = APIRouter()
 @router.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request):
     """Main dashboard — network overview."""
-    chargers = await api("/chargers?limit=100")
-    sessions = await api("/sessions/stats/summary")
-    pki = await api("/pki/stats")
-    events = await api("/events/info")
+    try:
+        chargers = await api("/chargers?limit=100")
+    except Exception:
+        chargers = {"chargers": [], "total": 0}
+    try:
+        sessions = await api("/sessions/stats/summary")
+    except Exception:
+        sessions = {}
+    try:
+        pki = await api("/pki/stats")
+    except Exception:
+        pki = {}
+    try:
+        events = await api("/events/info")
+    except Exception:
+        events = {}
 
     return templates.TemplateResponse(request, "dashboard.html", context={
         "chargers": chargers.get("chargers", []),
@@ -27,7 +39,10 @@ async def dashboard(request: Request):
 @router.get("/partials/charger-rows", response_class=HTMLResponse)
 async def charger_rows(request: Request):
     """HTMX partial: charger table rows (auto-refresh)."""
-    data = await api("/chargers?limit=100")
+    try:
+        data = await api("/chargers?limit=100")
+    except Exception:
+        data = {"chargers": []}
     return templates.TemplateResponse(request, "partials/charger_rows.html", context={
         "chargers": data.get("chargers", []),
     })
@@ -36,7 +51,10 @@ async def charger_rows(request: Request):
 @router.get("/partials/session-rows", response_class=HTMLResponse)
 async def session_rows(request: Request):
     """HTMX partial: session table rows (auto-refresh)."""
-    data = await api("/sessions?limit=50")
+    try:
+        data = await api("/sessions?limit=50")
+    except Exception:
+        data = {"sessions": []}
     return templates.TemplateResponse(request, "partials/session_rows.html", context={
         "sessions": data.get("sessions", []),
     })
@@ -45,8 +63,14 @@ async def session_rows(request: Request):
 @router.get("/partials/stats", response_class=HTMLResponse)
 async def stats_partial(request: Request):
     """HTMX partial: dashboard stats cards."""
-    stats = await api("/sessions/stats/summary")
-    chargers = await api("/chargers?limit=1")
+    try:
+        stats = await api("/sessions/stats/summary")
+    except Exception:
+        stats = {}
+    try:
+        chargers = await api("/chargers?limit=1")
+    except Exception:
+        chargers = {"total": 0}
     return templates.TemplateResponse(request, "partials/stats.html", context={
         "stats": stats,
         "charger_count": chargers.get("total", 0),

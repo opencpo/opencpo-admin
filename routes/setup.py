@@ -199,10 +199,8 @@ async def setup_step(request: Request, step_name: str):
         payload = {
             "ocpi": form.get("ocpi", "off") == "on",
             "billing": form.get("billing", "off") == "on",
-            "ems": form.get("ems", "off") == "on",
             "iso15118": form.get("iso15118", "off") == "on",
         }
-
     error = None
     try:
         async with httpx.AsyncClient(base_url=CORE_API, timeout=10) as client:
