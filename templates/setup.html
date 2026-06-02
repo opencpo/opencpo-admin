@@ -179,7 +179,9 @@
 
         <!-- Step indicator + current step -->
         <div id="wizard-content">
+            {% with step = current_step %}
             {% include '_wizard_content.html' %}
+            {% endwith %}
         </div>
     </div>
 
