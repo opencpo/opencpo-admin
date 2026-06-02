@@ -25,7 +25,47 @@
         </div>
         <div>
             <label for="password">Password (min 8 characters)</label>
-            <input id="password" name="password" type="password" class="input-field" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" minlength="8" required>
+            <input id="password" name="password" type="password" class="input-field" placeholder="••••••••" minlength="8" required>
+        </div>
+
+        {% elif step == "tailscale" %}
+        <div style="font-size:12px;color:#3d5870;margin-bottom:4px;">
+            Tailscale connects your OpenCPO instance to your tailnet, enabling secure
+            remote access to the admin panel and charger WebSocket ports from any
+            device on your network.
+        </div>
+        <div style="background:#060d19;border:1px solid #1e3452;border-radius:7px;padding:14px;">
+            <div style="font-size:13px;color:#8ba3b8;margin-bottom:10px;">Expose services on your tailnet:</div>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+                <label class="checkbox-label">
+                    <input type="checkbox" name="enable_admin" checked style="margin-right:8px;">
+                    Admin Panel (port 8080)
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" name="enable_api" checked style="margin-right:8px;">
+                    REST API (port 8000)
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" name="enable_charge_app" style="margin-right:8px;">
+                    Charge App (port 8003)
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" name="enable_ocpp16" style="margin-right:8px;">
+                    OCPP 1.6 WebSocket (port 9100)
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" name="enable_ocpp201" style="margin-right:8px;">
+                    OCPP 2.0.1 WebSocket (port 9201)
+                </label>
+            </div>
+        </div>
+        <div>
+            <label for="tags">Tailscale ACL Tags (comma-separated, optional)</label>
+            <input id="tags" name="tags" type="text" class="input-field" placeholder="tag:opencpo, tag:admin" value="tag:opencpo">
+        </div>
+        <div style="font-size:12px;color:#3d5870;margin-top:-4px;">
+            Tags are applied to the machine for ACL-based access control.
+            Requires <code style="color:#6b8299;">--accept-tags</code> in your Tailscale auth key.
         </div>
 
         {% elif step == "org" %}
@@ -63,6 +103,39 @@
             <input id="public_url" name="public_url" type="url" class="input-field" value="http://localhost" placeholder="https://cpo.example.com">
         </div>
 
+        {% elif step == "branding" %}
+        <div style="font-size:12px;color:#3d5870;margin-bottom:4px;">
+            Customize the platform appearance. All settings can be changed later.
+        </div>
+        <div>
+            <label for="accent_color">Accent Color</label>
+            <div style="display:flex;gap:10px;align-items:center;">
+                <input id="accent_color" name="accent_color" type="color" class="input-field" value="#00B0E4"
+                       style="width:48px;height:40px;padding:4px;flex-shrink:0;">
+                <input type="text" class="input-field" value="#00B0E4"
+                       oninput="document.getElementById('accent_color').value=this.value"
+                       style="flex:1;" placeholder="#00B0E4">
+            </div>
+        </div>
+        <div>
+            <label for="skin">Charge App Skin</label>
+            <select id="skin" name="skin" class="input-field">
+                <option value="default">Default — OpenCPO branded</option>
+                <option value="minimal">Minimal — clean, unbranded</option>
+                <option value="dark">Dark — high-contrast dark theme</option>
+                <option value="custom">Custom — use your own branding</option>
+            </select>
+        </div>
+        <div>
+            <label for="charge_app_name">Charge App Name</label>
+            <input id="charge_app_name" name="charge_app_name" type="text" class="input-field"
+                   value="OpenCPO Charge" placeholder="My Charging App">
+        </div>
+        <div>
+            <label for="logo_url">Logo URL (optional)</label>
+            <input id="logo_url" name="logo_url" type="url" class="input-field" placeholder="https://example.com/logo.png">
+        </div>
+
         {% elif step == "smtp" %}
         <div style="font-size:12px;color:#3d5870;margin-bottom:4px;">Leave empty to skip — can be configured later.</div>
         <div>
@@ -86,7 +159,7 @@
             </div>
             <div>
                 <label for="smtp_password">Password</label>
-                <input id="smtp_password" name="password" type="password" class="input-field" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;">
+                <input id="smtp_password" name="password" type="password" class="input-field" placeholder="••••••">
             </div>
         </div>
         <div>

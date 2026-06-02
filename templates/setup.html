@@ -25,6 +25,12 @@
             border-radius: 12px;
             box-shadow: 0 24px 64px rgba(0,0,0,0.5);
         }
+        .welcome-card {
+            background: #0a1221;
+            border: 1px solid #15283f;
+            border-radius: 16px;
+            box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+        }
         .step-indicator { color: #3d5870; font-size: 13px; }
         .step-indicator .active { color: #00B0E4; font-weight: 600; }
         .step-indicator .done { color: #84BD00; }
@@ -74,6 +80,83 @@
 </head>
 <body class="h-full flex flex-col items-center justify-center" style="min-height:100vh;">
 
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <!-- WELCOME SCREEN (shown on first visit, before any steps)        -->
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    {% if show_welcome %}
+
+    <div style="max-width:600px;width:100%;padding:0 24px;">
+
+        <div class="welcome-card" style="padding:48px 40px;text-align:center;">
+
+            <!-- Logo -->
+            <div style="font-size:40px;font-weight:700;letter-spacing:-1px;margin-bottom:4px;">
+                <span style="color:#e8edf2;">Open</span><span style="color:#4a6580;">CPO</span>
+            </div>
+
+            <!-- Tagline -->
+            <p style="font-size:13px;color:#3d5870;letter-spacing:3px;text-transform:uppercase;margin-bottom:32px;">
+                Open Source EV Charging Platform
+            </p>
+
+            <!-- Divider -->
+            <div style="height:1px;background:linear-gradient(90deg,transparent,#15283f,transparent);margin-bottom:32px;"></div>
+
+            <!-- Description -->
+            <p style="font-size:15px;color:#8ba3b8;line-height:1.6;margin-bottom:32px;text-align:left;">
+                OpenCPO is a zero-trust EV charging management platform built for
+                charge point operators. It supports <strong style="color:#e8edf2;">OCPP 1.6</strong> and
+                <strong style="color:#e8edf2;">OCPP 2.0.1</strong>, <strong style="color:#e8edf2;">ISO 15118</strong>
+                Plug &amp; Charge, PKI-based charger authentication, OCPI roaming,
+                and real-time energy management.
+            </p>
+
+            <!-- Feature grid -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:36px;text-align:left;">
+                <div style="background:#060d19;border:1px solid #15283f;border-radius:8px;padding:12px 14px;">
+                    <div style="font-size:11px;color:#00B0E4;letter-spacing:1px;text-transform:uppercase;margin-bottom:2px;">OCPP</div>
+                    <div style="font-size:13px;color:#8ba3b8;">1.6 &amp; 2.0.1</div>
+                </div>
+                <div style="background:#060d19;border:1px solid #15283f;border-radius:8px;padding:12px 14px;">
+                    <div style="font-size:11px;color:#00B0E4;letter-spacing:1px;text-transform:uppercase;margin-bottom:2px;">Auth</div>
+                    <div style="font-size:13px;color:#8ba3b8;">PKI + mTLS + JWT</div>
+                </div>
+                <div style="background:#060d19;border:1px solid #15283f;border-radius:8px;padding:12px 14px;">
+                    <div style="font-size:11px;color:#00B0E4;letter-spacing:1px;text-transform:uppercase;margin-bottom:2px;">ISO 15118</div>
+                    <div style="font-size:13px;color:#8ba3b8;">Plug &amp; Charge</div>
+                </div>
+                <div style="background:#060d19;border:1px solid #15283f;border-radius:8px;padding:12px 14px;">
+                    <div style="font-size:11px;color:#00B0E4;letter-spacing:1px;text-transform:uppercase;margin-bottom:2px;">Tailscale</div>
+                    <div style="font-size:13px;color:#8ba3b8;">Secure tailnet access</div>
+                </div>
+                <div style="background:#060d19;border:1px solid #15283f;border-radius:8px;padding:12px 14px;">
+                    <div style="font-size:11px;color:#00B0E4;letter-spacing:1px;text-transform:uppercase;margin-bottom:2px;">OCPI</div>
+                    <div style="font-size:13px;color:#8ba3b8;">Network roaming</div>
+                </div>
+                <div style="background:#060d19;border:1px solid #15283f;border-radius:8px;padding:12px 14px;">
+                    <div style="font-size:11px;color:#00B0E4;letter-spacing:1px;text-transform:uppercase;margin-bottom:2px;">Billing</div>
+                    <div style="font-size:13px;color:#8ba3b8;">Invoicing &amp; tariffs</div>
+                </div>
+            </div>
+
+            <!-- Get Started button -->
+            <button class="btn-primary" style="font-size:16px;padding:14px 40px;"
+                    hx-get="/setup/start" hx-target="body" hx-swap="innerHTML">
+                Begin Setup →
+            </button>
+
+            <!-- Footer -->
+            <div style="margin-top:24px;font-size:12px;color:#2d4a63;">
+                Open source · <a href="https://github.com/opencpo" style="color:#3d5870;">github.com/opencpo</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <!-- WIZARD SCREEN (shown once setup has started)                   -->
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    {% else %}
+
     <div style="max-width:540px;width:100%;padding:0 20px;">
 
         <!-- Logo -->
@@ -109,15 +192,14 @@
         <div id="setup-step">
             {% include '_setup_step.html' %}
         </div>
-
     </div>
 
+    {% endif %}
+
     <script>
-        // HTMX will swap #setup-step content
         document.body.addEventListener('htmx:afterSwap', function(evt) {
-            if (evt.detail.target.id === 'setup-step') {
-                // Focus first input in the new step
-                const firstInput = document.querySelector('#setup-step input');
+            if (evt.detail.target && evt.detail.target.id === 'setup-step') {
+                const firstInput = document.querySelector('#setup-step input, #setup-step select');
                 if (firstInput) firstInput.focus();
             }
         });

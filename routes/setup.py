@@ -7,7 +7,7 @@ All steps are skippable.
 import logging
 
 import httpx
-from fastapi import APIRouter, Request, Form
+from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
 from shared import templates, CORE_API, get_setup_status
@@ -16,11 +16,13 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-STEPS = ["admin", "org", "smtp", "pki", "pricing", "features"]
+STEPS = ["admin", "tailscale", "org", "branding", "smtp", "pki", "pricing", "features"]
 
 STEP_LABELS = {
     "admin": "Admin Account",
+    "tailscale": "Tailscale",
     "org": "Organization",
+    "branding": "Branding",
     "smtp": "Email (SMTP)",
     "pki": "Security (PKI)",
     "pricing": "Pricing",
@@ -28,17 +30,21 @@ STEP_LABELS = {
 }
 
 STEP_DESCRIPTIONS = {
-    "admin": "Create the first administrator account.",
-    "org": "Set your organization name, currency, and public URL.",
+    "admin": "Create the first administrator account to sign into the platform.",
+    "tailscale": "Connect OpenCPO to your tailnet for secure remote access.",
+    "org": "Set your organization name, timezone, currency, and public URL.",
+    "branding": "Customize the look and feel of your platform.",
     "smtp": "Configure email sending for notifications and invitations.",
     "pki": "Initialize the Public Key Infrastructure for charger certificates.",
-    "pricing": "Set a default charging tariff.",
-    "features": "Enable optional platform modules.",
+    "pricing": "Set a default charging tariff and pricing tiers.",
+    "features": "Enable optional platform modules like OCPI roaming and billing.",
 }
 
 STEP_ICONS = {
     "admin": "👤",
+    "tailscale": "🔗",
     "org": "🏢",
+    "branding": "🎨",
     "smtp": "📧",
     "pki": "🔐",
     "pricing": "💰",
@@ -52,7 +58,6 @@ async def setup_wizard(request: Request):
     try:
         status = await get_setup_status()
     except Exception:
-        # If core is unreachable, show a friendly error
         return templates.TemplateResponse(request, "setup.html", context={
             "error": "Could not connect to the backend. Is OCPP Core running?",
             "steps": [],
@@ -60,6 +65,7 @@ async def setup_wizard(request: Request):
             "step_labels": STEP_LABELS,
             "step_icons": STEP_ICONS,
             "step_descriptions": STEP_DESCRIPTIONS,
+            "show_welcome": False,
         })
 
     if status.get("complete", False):
@@ -75,8 +81,22 @@ async def setup_wizard(request: Request):
             break
 
     if not current_step:
-        # All are done/skipped — redirect to dashboard
         return RedirectResponse("/", status_code=302)
+
+    # Show welcome screen if NO step has any progress yet
+    all_pending = all(steps_state.get(s, "pending") == "pending" for s in STEPS)
+
+    if all_pending:
+        return templates.TemplateResponse(request, "setup.html", context={
+            "error": None,
+            "steps": STEPS,
+            "current_step": None,
+            "steps_state": steps_state,
+            "step_labels": STEP_LABELS,
+            "step_icons": STEP_ICONS,
+            "step_descriptions": STEP_DESCRIPTIONS,
+            "show_welcome": True,
+        })
 
     return templates.TemplateResponse(request, "setup.html", context={
         "error": None,
@@ -86,13 +106,40 @@ async def setup_wizard(request: Request):
         "step_labels": STEP_LABELS,
         "step_icons": STEP_ICONS,
         "step_descriptions": STEP_DESCRIPTIONS,
+        "show_welcome": False,
+    })
+
+
+@router.get("/setup/start", response_class=HTMLResponse)
+async def setup_start(request: Request):
+    """Start the setup wizard from the welcome screen. Returns the first step."""
+    try:
+        status = await get_setup_status()
+        steps_state = status.get("steps", {})
+    except Exception:
+        steps_state = {}
+
+    current_step = None
+    for name in STEPS:
+        if steps_state.get(name, "pending") == "pending":
+            current_step = name
+            break
+
+    return templates.TemplateResponse(request, "setup.html", context={
+        "error": None,
+        "steps": STEPS,
+        "current_step": current_step,
+        "steps_state": steps_state,
+        "step_labels": STEP_LABELS,
+        "step_icons": STEP_ICONS,
+        "step_descriptions": STEP_DESCRIPTIONS,
+        "show_welcome": False,
     })
 
 
 @router.post("/setup/step/{step_name}")
 async def setup_step(request: Request, step_name: str):
     """Handle form submission for a setup step and return HTMX partial."""
-    from shared import templates
     form = await request.form()
 
     # Build the API payload and endpoint based on step
@@ -105,12 +152,28 @@ async def setup_step(request: Request, step_name: str):
             "password": form.get("password", ""),
             "name": form.get("name", "Admin"),
         }
+    elif step_name == "tailscale":
+        payload = {
+            "enable_admin": form.get("enable_admin", "off") == "on",
+            "enable_ocpp16": form.get("enable_ocpp16", "off") == "on",
+            "enable_ocpp201": form.get("enable_ocpp201", "off") == "on",
+            "enable_api": form.get("enable_api", "off") == "on",
+            "enable_charge_app": form.get("enable_charge_app", "off") == "on",
+            "tags": form.get("tags", ""),
+        }
     elif step_name == "org":
         payload = {
             "name": form.get("name", "My CPO"),
             "timezone": form.get("timezone", "Europe/Amsterdam"),
             "currency": form.get("currency", "EUR"),
             "public_url": form.get("public_url", "http://localhost"),
+        }
+    elif step_name == "branding":
+        payload = {
+            "accent_color": form.get("accent_color", "#00B0E4"),
+            "logo_url": form.get("logo_url", ""),
+            "skin": form.get("skin", "default"),
+            "charge_app_name": form.get("charge_app_name", "OpenCPO Charge"),
         }
     elif step_name == "smtp":
         payload = {
