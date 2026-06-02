@@ -1,11 +1,11 @@
-"""
-Shared helpers for CPO Admin route modules.
+"""Shared helpers for CPO Admin route modules.
 
 All route modules import from here — never from main.py.
 """
 import os
 import json
 import logging
+from datetime import datetime, timezone
 
 import httpx
 from fastapi import Request
@@ -24,6 +24,26 @@ PKI_DATA_DIR = os.getenv("PKI_DATA_DIR", "/app/data/pki")
 # Templates (shared instance)
 templates = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "templates"))
 templates.env.globals["app_title"] = APP_TITLE
+
+# ── Local JWT verification (avoids calling core /me on every request) ─────
+_JWT_SECRET = os.getenv("JWT_SECRET", os.getenv("CORE_API_KEY", "opencpo-admin-jwt-secret"))
+_JWT_ALGO = "HS256"
+
+
+def _verify_token_local(token: str) -> dict | None:
+    """Decode and verify a JWT locally. Returns payload dict or None."""
+    try:
+        import jwt as pyjwt
+        payload = pyjwt.decode(token, _JWT_SECRET, algorithms=[_JWT_ALGO])
+        # Check expiry manually (pyjwt raises on expiry, but belt-and-suspenders)
+        exp = payload.get("exp", 0)
+        if exp and datetime.fromtimestamp(exp, tz=timezone.utc) < datetime.now(timezone.utc):
+            logger.warning("verify_session: token expired")
+            return None
+        return payload
+    except Exception as exc:
+        logger.warning("verify_session: local JWT verify failed: %s", exc)
+        return None
 
 
 async def get_setup_status() -> dict:
@@ -44,11 +64,29 @@ def get_session_token(request: Request) -> str | None:
 
 
 async def verify_session(request: Request) -> dict | None:
-    """Verify the JWT session cookie against the core API. Returns user dict or None."""
+    """Verify the JWT session cookie locally (no core API call).
+    
+    Decodes and validates the JWT expiry right here. Falls back to calling
+    core /me only if local verification fails (e.g. different secret key).
+    Returns a user dict or None.
+    """
     token = get_session_token(request)
     if not token:
         logger.warning("verify_session: no opencpo_session cookie found")
         return None
+
+    # Try local JWT verification first — avoids rate limiting core auth
+    payload = _verify_token_local(token)
+    if payload:
+        return {
+            "id": int(payload.get("sub", 0)),
+            "email": payload.get("email", ""),
+            "name": payload.get("name", payload.get("email", "")),
+            "role": payload.get("role", "admin"),
+        }
+
+    # Fallback: call core /me (different secret, key rotation, etc.)
+    logger.info("verify_session: local verify failed, falling back to core /me")
     try:
         async with httpx.AsyncClient(base_url=CORE_API, timeout=5) as client:
             r = await client.get(
