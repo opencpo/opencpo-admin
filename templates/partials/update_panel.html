@@ -9,7 +9,7 @@
                 <div class="text-center">
                     <div class="text-xs text-gray-500 uppercase tracking-wider mb-1">Current</div>
                     <div class="text-lg font-mono font-bold {% if needs_update %}text-gray-400{% else %}text-green-400{% endif %}">
-                        v{{ current }}
+                        {{ current }}
                     </div>
                 </div>
                 <!-- Arrow / status -->
@@ -26,7 +26,7 @@
                 {% if latest and latest != current %}
                 <div class="text-center">
                     <div class="text-xs text-gray-500 uppercase tracking-wider mb-1">Latest</div>
-                    <div class="text-lg font-mono font-bold text-yellow-300">v{{ latest }}</div>
+                    <div class="text-lg font-mono font-bold text-yellow-300">{{ latest }}</div>
                 </div>
                 {% endif %}
             </div>
@@ -39,7 +39,7 @@
         <button hx-post="/action/update/run"
                 hx-target="#update-result-panel"
                 hx-swap="innerHTML"
-                hx-confirm="Update to v{{ latest }}? The platform will restart. Continue?"
+                hx-confirm="Update to {{ latest }}? The platform will restart. Continue?"
                 hx-indicator="#update-run-spinner"
                 class="px-5 py-2 bg-yellow-700 hover:bg-yellow-600 text-white font-bold rounded-lg text-sm transition-colors">
             ⬆ Update Now
@@ -74,7 +74,7 @@
     {% if changelog %}
     <details class="bg-gray-900/30 border border-gray-800 rounded-lg">
         <summary class="px-4 py-3 text-sm text-gray-300 cursor-pointer hover:text-gray-200 font-medium select-none">
-            📋 Changelog — v{{ latest }}
+            📋 Changelog — {{ latest }}
         </summary>
         <div class="px-4 pb-4 text-xs text-gray-400 leading-relaxed whitespace-pre-wrap font-mono">
             {{ changelog }}
