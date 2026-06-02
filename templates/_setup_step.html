@@ -1,7 +1,7 @@
 <!-- Step: {{ step }} -->
 <div class="setup-card" style="padding:32px;">
 
-    <div style="font-size:13px;color:#84BD00;margin-bottom:4px;">{{ step_icons[step] }} Step {{ loop.index if step in steps else '' }}</div>
+    <div style="font-size:13px;color:#84BD00;margin-bottom:4px;">{{ step_icons[step] }} Step {{ steps.index(step) + 1 if step in steps else '' }}</div>
     <h2 style="font-size:20px;font-weight:600;color:#e8edf2;margin-bottom:6px;">{{ step_labels[step] }}</h2>
     <p style="font-size:13px;color:#3d5870;margin-bottom:24px;">{{ step_descriptions[step] }}</p>
 
@@ -11,7 +11,7 @@
     </div>
     {% endif %}
 
-    <form hx-post="/setup/step/{{ step }}" hx-target="#setup-step" hx-swap="innerHTML"
+    <form hx-post="/setup/step/{{ step }}" hx-target="#wizard-content" hx-swap="outerHTML"
           style="display:flex;flex-direction:column;gap:16px;">
 
         {% if step == "admin" %}
@@ -228,7 +228,7 @@
                 {% if step == "features" %}Finish Setup{% else %}Continue →{% endif %}
             </button>
             <button type="button" class="btn-skip"
-                    hx-post="/setup/skip/{{ step }}" hx-target="#setup-step" hx-swap="innerHTML">
+                    hx-post="/setup/skip/{{ step }}" hx-target="#wizard-content" hx-swap="outerHTML">
                 Skip — I'll configure manually
             </button>
         </div>

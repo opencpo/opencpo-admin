@@ -1,0 +1,19 @@
+<!-- Wizard content: step indicator + current step form -->
+<div id="wizard-content">
+
+    <div class="step-indicator" style="display:flex;gap:4px;justify-content:center;margin-bottom:24px;flex-wrap:wrap;">
+        {% for s in steps %}
+        {% set state = steps_state.get(s, 'pending') %}
+        <span style="display:flex;align-items:center;gap:4px;{% if state == 'done' %}color:#84BD00;{% elif state == 'skipped' %}color:#6b8299;{% elif s == current_step %}color:#00B0E4;font-weight:600;{% endif %}">
+            {% if state == 'done' %}✓{% elif state == 'skipped' %}—{% else %}{{ loop.index }}{% endif %}
+            <span style="display:none;">{{ step_labels[s] }}</span>
+        </span>
+        {% if not loop.last %}<span style="color:#1e3452;">·</span>{% endif %}
+        {% endfor %}
+    </div>
+
+    <div id="setup-step">
+        {% include '_setup_step.html' %}
+    </div>
+
+</div>

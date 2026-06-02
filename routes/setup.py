@@ -233,9 +233,11 @@ async def setup_step(request: Request, step_name: str):
     if complete or not current_step:
         return templates.TemplateResponse(request, "_setup_done.html")
 
-    return templates.TemplateResponse(request, "_setup_step.html", context={
+    return templates.TemplateResponse(request, "_wizard_content.html", context={
         "error": error,
         "step": current_step,
+        "steps": STEPS,
+        "steps_state": steps_state,
         "step_labels": STEP_LABELS,
         "step_icons": STEP_ICONS,
         "step_descriptions": STEP_DESCRIPTIONS,
@@ -269,9 +271,11 @@ async def skip_step(request: Request, step_name: str):
     if complete or not current_step:
         return templates.TemplateResponse(request, "_setup_done.html")
 
-    return templates.TemplateResponse(request, "_setup_step.html", context={
+    return templates.TemplateResponse(request, "_wizard_content.html", context={
         "error": None,
         "step": current_step,
+        "steps": STEPS,
+        "steps_state": steps_state,
         "step_labels": STEP_LABELS,
         "step_icons": STEP_ICONS,
         "step_descriptions": STEP_DESCRIPTIONS,
