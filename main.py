@@ -44,7 +44,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Paths that don't require authentication
-_PUBLIC_PREFIXES = ("/login", "/logout", "/setup", "/static", "/favicon.ico")
+_PUBLIC_PREFIXES = ("/login", "/logout", "/setup", "/static", "/favicon.ico", "/health")
 
 
 class AuthMiddleware(BaseHTTPMiddleware):
