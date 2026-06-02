@@ -188,7 +188,7 @@ async def action_update_postpone(request: Request):
         hours = 24
 
     try:
-        result = await api("/admin/update/postpone", method="POST", json_data={"hours": hours})
+        result = await api("/admin/update/postpone", method="POST", json={"hours": hours})
         if result.get("ok"):
             logger.info("Update postponed for %d hours", hours)
         else:

@@ -113,7 +113,7 @@ async def verify_session(request: Request) -> dict | None:
     return None
 
 
-async def api(path: str, method: str = "GET", json_data: dict = None,
+async def api(path: str, method: str = "GET", json: dict = None,
               token: str = None) -> dict | httpx.Response:
     """Call OCPP Core API. Returns parsed JSON response.
     Set raw=True to get the raw httpx.Response object.
@@ -128,9 +128,9 @@ async def api(path: str, method: str = "GET", json_data: dict = None,
         if method == "GET":
             r = await client.get(f"/api/v1{path}")
         elif method == "POST":
-            r = await client.post(f"/api/v1{path}", json=json_data)
+            r = await client.post(f"/api/v1{path}", json=json)
         elif method == "PUT":
-            r = await client.put(f"/api/v1{path}", json=json_data)
+            r = await client.put(f"/api/v1{path}", json=json)
         elif method == "DELETE":
             r = await client.delete(f"/api/v1{path}")
         r.raise_for_status()

@@ -30,7 +30,7 @@ async def backup_panel_partial(request: Request):
 async def action_backup_create(request: Request):
     """Trigger a backup via the core API."""
     try:
-        result = await api("/admin/backups", method="POST", json_data={})
+        result = await api("/admin/backups", method="POST", json={})
         if result.get("ok"):
             return HTMLResponse(_ok("Backup created successfully. Refreshing list...") +
                                 '<script>setTimeout(() => htmx.trigger("#backup-panel", "load"), 1500)</script>')
