@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 CHARGE_APP_DIR = os.getenv(
     "CHARGE_APP_DIR",
-    os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "stroomlijnen-charge-app"),
+    os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "opencpo-charge-app"),
 )
 
 

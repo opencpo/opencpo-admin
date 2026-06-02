@@ -13,36 +13,31 @@ let recentTimestamps = [];
 function classifyType(type) {
   if (!type) return { css: 'type-boot', label: type || 'unknown', dir: 'from' };
 
-  // Direction heuristic: ops/remote commands go TO the charger; everything else FROM
   const toCharger = type.startsWith('ops.') || type.startsWith('remote.');
   const dir = toCharger ? 'to' : 'from';
 
   let css = 'type-boot';
   const t = type.toLowerCase();
-  if (t.includes('boot') || t.includes('heartbeat'))          css = 'type-boot';
-  else if (t.includes('online'))                               css = 'type-boot';
-  else if (t.includes('offline'))                              css = 'type-error';
-  else if (t.includes('status'))                               css = 'type-status';
-  else if (t.includes('meter'))                                css = 'type-meter';
-  else if (t.includes('start'))                                css = 'type-start';
-  else if (t.includes('stop') || t.includes('cdr'))           css = 'type-stop';
-  else if (t.includes('auth'))                                 css = 'type-auth';
-  else if (t.includes('alert') || t.includes('error'))        css = 'type-error';
-  else if (t.includes('pki') || t.includes('cert'))           css = 'type-pki';
+  if (t.includes('boot') || t.includes('heartbeat')) css = 'type-boot';
+  else if (t.includes('online')) css = 'type-boot';
+  else if (t.includes('offline')) css = 'type-error';
+  else if (t.includes('status')) css = 'type-status';
+  else if (t.includes('meter')) css = 'type-meter';
+  else if (t.includes('start')) css = 'type-start';
+  else if (t.includes('stop') || t.includes('cdr')) css = 'type-stop';
+  else if (t.includes('auth')) css = 'type-auth';
+  else if (t.includes('alert') || t.includes('error')) css = 'type-error';
+  else if (t.includes('pki') || t.includes('cert')) css = 'type-pki';
 
   return { css, label: type, dir };
 }
 
-// ─── Direction from event (override via classify) ─────────────────────────────
 function getDirection(evt) {
-  // Use direction field if present (from ocpp_messages table data)
-  if (evt.direction) return evt.direction; // 'inbound' | 'outbound'
-  // Infer from event type
+  if (evt.direction) return evt.direction;
   const { dir } = classifyType(evt.type);
   return dir;
 }
 
-// ─── JSON syntax highlighting ─────────────────────────────────────────────────
 function highlightJSON(obj) {
   const str = JSON.stringify(obj, null, 2);
   return str
@@ -58,7 +53,6 @@ function highlightJSON(obj) {
     });
 }
 
-// ─── Timestamp formatting ─────────────────────────────────────────────────────
 function fmtTime(ts) {
   if (!ts) return '--:--:--.---';
   const d = new Date(ts);
@@ -69,28 +63,128 @@ function fmtTime(ts) {
   return `${h}:${m}:${s}.${ms}`;
 }
 
-// ─── Render a single message row ──────────────────────────────────────────────
+function humanizeType(type) {
+  const map = {
+    'charger.boot': 'Boot',
+    'charger.online': 'Online',
+    'charger.offline': 'Offline',
+    'charger.status': 'Status',
+    'charger.heartbeat': 'Heartbeat',
+    'session.start': 'Session started',
+    'session.stop': 'Session stopped',
+    'session.meter': 'Meter values',
+    'session.cdr': 'Session summary',
+    'auth.result': 'Authorization',
+    'ops.alert': 'Alert',
+    'BootNotification': 'Boot',
+    'Heartbeat': 'Heartbeat',
+    'StatusNotification': 'Status',
+    'MeterValues': 'Meter values',
+    'StartTransaction': 'Session started',
+    'StopTransaction': 'Session stopped',
+    'Authorize': 'Authorization',
+    'RemoteStartTransaction': 'Remote start',
+    'RemoteStopTransaction': 'Remote stop',
+    'Reset': 'Reset',
+    'FirmwareStatusNotification': 'Firmware',
+  };
+  return map[type] || type || 'Unknown';
+}
+
+function formatValue(v, suffix = '') {
+  if (v === null || v === undefined || v === '') return null;
+  return `${v}${suffix}`;
+}
+
+function summarizeEvent(evt) {
+  const data = evt.data || {};
+  const type = evt.type || '';
+
+  if (type.includes('heartbeat') || type === 'Heartbeat') {
+    return 'Heartbeat received';
+  }
+
+  if (type.includes('boot') || type === 'BootNotification') {
+    const vendor = data.chargePointVendor || data.vendor || data.vendor_name;
+    const model = data.chargePointModel || data.model || data.model_name;
+    return [vendor, model].filter(Boolean).join(' ') || 'Charger booted';
+  }
+
+  if (type.includes('status') || type === 'StatusNotification') {
+    const status = data.status || data.connector_status;
+    const connector = data.connectorId ?? data.connector_id;
+    const error = data.errorCode || data.error_code;
+    const parts = [];
+    if (status) parts.push(status);
+    if (connector !== undefined && connector !== null) parts.push(`connector ${connector}`);
+    if (error && error !== 'NoError') parts.push(error);
+    return parts.join(' • ') || 'Status updated';
+  }
+
+  if (type.includes('meter') || type === 'MeterValues') {
+    const power = data.power_kw ?? data.power;
+    const energy = data.energy_wh ?? data.energy_wh;
+    const soc = data.soc ?? data.state_of_charge;
+    const parts = [];
+    if (power !== undefined) parts.push(`${Number(power).toFixed(1)} kW`);
+    if (energy !== undefined) parts.push(`${Math.round(Number(energy))} Wh`);
+    if (soc !== undefined) parts.push(`${soc}% SoC`);
+    return parts.join(' • ') || 'Meter update';
+  }
+
+  if (type.includes('start') || type === 'StartTransaction') {
+    const connector = data.connectorId ?? data.connector_id;
+    const idTag = data.idTag || data.id_tag;
+    const tx = data.transactionId || data.transaction_id;
+    const parts = ['Charging started'];
+    if (connector !== undefined) parts.push(`connector ${connector}`);
+    if (idTag) parts.push(idTag);
+    if (tx) parts.push(`tx ${tx}`);
+    return parts.join(' • ');
+  }
+
+  if (type.includes('stop') || type === 'StopTransaction') {
+    const reason = data.reason;
+    const tx = data.transactionId || data.transaction_id;
+    const parts = ['Charging stopped'];
+    if (reason) parts.push(reason);
+    if (tx) parts.push(`tx ${tx}`);
+    return parts.join(' • ');
+  }
+
+  if (type.includes('auth') || type === 'Authorize') {
+    const status = data.status || data.idTagInfo?.status;
+    const tag = data.idTag || data.id_tag;
+    const parts = [];
+    if (status) parts.push(status);
+    if (tag) parts.push(tag);
+    return parts.join(' • ') || 'Authorization checked';
+  }
+
+  if (type.includes('remote.start')) return 'Remote start command sent';
+  if (type.includes('remote.stop')) return 'Remote stop command sent';
+  if (type.includes('reset') || type === 'Reset') return 'Reset command';
+
+  const entries = Object.entries(data).slice(0, 3).map(([k, v]) => `${k}: ${typeof v === 'object' ? JSON.stringify(v) : v}`);
+  return entries.join(' • ') || 'Event received';
+}
+
 function renderRow(evt, idx) {
-  const { css, label } = classifyType(evt.type);
+  const { css } = classifyType(evt.type);
   const dir = getDirection(evt);
   const dirArrow = dir === 'to' ? '→' : '←';
   const dirClass = dir === 'to' ? 'msg-dir-to' : 'msg-dir-from';
   const cp = evt.charge_point || '';
-
-  // Build preview from data
-  const data = evt.data || {};
-  const dataStr = JSON.stringify(data);
-  const preview = dataStr.length > 85
-    ? dataStr.slice(0, 85).replace(/[{,]$/, '') + '…'
-    : dataStr;
-
-  const cpLink = cp ? `<a href="/remote/${encodeURIComponent(cp)}" onclick="event.stopPropagation()">${cp}</a>` : '—';
+  const cpShort = cp.startsWith('FARM-ENC-DCL120B-16-') ? cp.replace('FARM-ENC-DCL120B-16-', 'Farm #') : cp;
+  const typeLabel = humanizeType(evt.type);
+  const preview = summarizeEvent(evt);
+  const cpLink = cp ? `<a href="/remote/${encodeURIComponent(cp)}" onclick="event.stopPropagation()">${escapeHtml(cpShort)}</a>` : '—';
 
   return `<div class="msg-row" onclick="showDetail(${idx})" data-idx="${idx}">
     <span class="msg-ts">${fmtTime(evt.timestamp)}</span>
     <span class="msg-dir ${dirClass}">${dirArrow}</span>
-    <span class="msg-cp" title="${cp}">${cpLink}</span>
-    <span class="msg-type ${css}">${label}</span>
+    <span class="msg-cp" title="${escapeHtml(cp)}">${cpLink}</span>
+    <span class="msg-type ${css}">${escapeHtml(typeLabel)}</span>
     <span class="msg-preview">${escapeHtml(preview)}</span>
   </div>`;
 }
@@ -101,7 +195,6 @@ function escapeHtml(s) {
     .replace(/"/g,'&quot;');
 }
 
-// ─── Render the full filtered list ───────────────────────────────────────────
 function renderLog() {
   const log = document.getElementById('msg-log');
   const empty = document.getElementById('msg-empty');
@@ -110,72 +203,45 @@ function renderLog() {
     log.innerHTML = '';
     empty.style.display = 'block';
     log.appendChild(empty);
-    empty.textContent = allMessages.length === 0
-      ? 'Waiting for events…'
-      : 'No messages match current filters.';
+    empty.textContent = allMessages.length === 0 ? 'Waiting for events…' : 'No messages match current filters.';
     return;
   }
 
   empty.style.display = 'none';
-
-  // Re-render only — batch as fragment
   const frag = document.createDocumentFragment();
   const tmp = document.createElement('div');
   tmp.innerHTML = filteredMessages.map((evt, i) => renderRow(evt, allMessages.indexOf(evt))).join('');
   while (tmp.firstChild) frag.appendChild(tmp.firstChild);
-
   log.innerHTML = '';
   log.appendChild(frag);
 
-  if (document.getElementById('auto-scroll').checked) {
-    log.scrollTop = log.scrollHeight;
-  }
-
+  if (document.getElementById('auto-scroll').checked) log.scrollTop = log.scrollHeight;
   updateCounters();
 }
 
-// ─── Append a single new row (efficient for live stream) ─────────────────────
 function appendRow(evt) {
   const log = document.getElementById('msg-log');
   const empty = document.getElementById('msg-empty');
-
-  if (empty.style.display !== 'none') {
-    empty.style.display = 'none';
-  }
-
+  if (empty.style.display !== 'none') empty.style.display = 'none';
   const idx = allMessages.indexOf(evt);
   const div = document.createElement('div');
   div.innerHTML = renderRow(evt, idx);
-  const row = div.firstElementChild;
-  log.appendChild(row);
-
-  if (document.getElementById('auto-scroll').checked) {
-    log.scrollTop = log.scrollHeight;
-  }
-
-  // Trim rendered rows if too many
-  while (log.children.length > MAX_MESSAGES) {
-    log.removeChild(log.firstChild);
-  }
+  log.appendChild(div.firstElementChild);
+  if (document.getElementById('auto-scroll').checked) log.scrollTop = log.scrollHeight;
+  while (log.children.length > MAX_MESSAGES) log.removeChild(log.firstChild);
 }
 
-// ─── Add message to buffer ────────────────────────────────────────────────────
 function addMessage(evt) {
   allMessages.push(evt);
   if (allMessages.length > MAX_MESSAGES) allMessages.shift();
-
-  // Rate tracking
   const now = Date.now();
   recentTimestamps.push(now);
   recentTimestamps = recentTimestamps.filter(t => now - t < 5000);
-
   if (paused) {
     pendingMessages.push(evt);
     updateCounters();
     return;
   }
-
-  // Check if this event passes current filters
   if (passesFilter(evt)) {
     filteredMessages.push(evt);
     if (filteredMessages.length > MAX_MESSAGES) filteredMessages.shift();
@@ -184,13 +250,11 @@ function addMessage(evt) {
   }
 }
 
-// ─── Filter logic ─────────────────────────────────────────────────────────────
 function passesFilter(evt) {
   const cpFilter = document.getElementById('filter-charger').value;
   const typeFilter = document.getElementById('filter-type').value;
   const dirFilter = document.getElementById('filter-direction').value;
   const searchFilter = document.getElementById('filter-search').value.trim().toLowerCase();
-
   if (cpFilter && evt.charge_point !== cpFilter) return false;
   if (typeFilter && evt.type !== typeFilter) return false;
   if (dirFilter) {
@@ -210,27 +274,19 @@ function applyFilters() {
   renderLog();
 }
 
-// ─── Counters ─────────────────────────────────────────────────────────────────
 function updateCounters() {
   const total = allMessages.length;
   const rate = (recentTimestamps.length / 5).toFixed(1);
   document.getElementById('msg-counter').textContent = `${total.toLocaleString()} events`;
   document.getElementById('msg-rate').textContent = `${rate} /sec`;
-
   const shown = filteredMessages.length;
   const fc = document.getElementById('filter-count');
-  if (shown !== total) {
-    fc.textContent = `${shown.toLocaleString()} shown`;
-  } else {
-    fc.textContent = '';
-  }
-
+  fc.textContent = shown !== total ? `${shown.toLocaleString()} shown` : '';
   if (paused && pendingMessages.length > 0) {
     document.getElementById('btn-pause').textContent = `Resume (${pendingMessages.length})`;
   }
 }
 
-// ─── Pause / Resume ───────────────────────────────────────────────────────────
 function togglePause() {
   paused = !paused;
   const btn = document.getElementById('btn-pause');
@@ -242,7 +298,6 @@ function togglePause() {
     btn.textContent = 'Pause';
     btn.style.color = '#c0cdd8';
     btn.style.borderColor = '#1e3450';
-    // Flush pending
     pendingMessages.forEach(e => {
       if (passesFilter(e)) {
         filteredMessages.push(e);
@@ -254,7 +309,6 @@ function togglePause() {
   }
 }
 
-// ─── Clear ────────────────────────────────────────────────────────────────────
 function clearLog() {
   allMessages = [];
   filteredMessages = [];
@@ -269,7 +323,6 @@ function clearLog() {
   updateCounters();
 }
 
-// ─── Export ───────────────────────────────────────────────────────────────────
 function exportMessages() {
   const data = JSON.stringify(filteredMessages, null, 2);
   const blob = new Blob([data], { type: 'application/json' });
@@ -281,17 +334,13 @@ function exportMessages() {
   URL.revokeObjectURL(url);
 }
 
-// ─── Detail panel ─────────────────────────────────────────────────────────────
 let detailEvt = null;
-
 function showDetail(idx) {
   const evt = allMessages[idx];
   if (!evt) return;
   detailEvt = evt;
-
-  document.getElementById('detail-title').textContent = evt.type || 'unknown';
+  document.getElementById('detail-title').textContent = humanizeType(evt.type || 'unknown');
   document.getElementById('detail-cp').textContent = evt.charge_point || '';
-
   const dir = getDirection(evt);
   const dirLabel = dir === 'to' ? '→ To charger' : '← From charger';
   const ts = evt.timestamp ? new Date(evt.timestamp).toLocaleString() : '—';
@@ -303,10 +352,8 @@ function showDetail(idx) {
     evt.connector != null && evt.connector !== '' ? `Connector: ${evt.connector}` : null,
     evt.simulated ? 'Simulated: true' : null,
   ].filter(Boolean).join('   |   ');
-
   document.getElementById('detail-meta').textContent = meta;
   document.getElementById('detail-json').innerHTML = highlightJSON(evt);
-
   document.getElementById('detail-panel').style.display = 'flex';
   document.getElementById('detail-backdrop').style.display = 'block';
 }
@@ -326,50 +373,34 @@ function copyDetail() {
   });
 }
 
-// ─── Load historical events ───────────────────────────────────────────────────
 async function loadHistory() {
   try {
     const resp = await fetch('/partials/ocpp-messages?limit=200');
     const data = await resp.json();
-    const events = (data.events || []).sort((a, b) =>
-      new Date(a.timestamp) - new Date(b.timestamp)
-    );
+    const events = (data.events || []).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
     events.forEach(addMessage);
-    if (events.length === 0) {
-      document.getElementById('msg-empty').textContent = 'No historical events found. Waiting for live events…';
-    }
+    if (events.length === 0) document.getElementById('msg-empty').textContent = 'No historical events found. Waiting for live events…';
   } catch (e) {
     console.warn('Failed to load history:', e);
   }
 }
 
-// ─── SSE connection ───────────────────────────────────────────────────────────
 function connectSSE() {
   const url = '/api/events/stream';
-
   if (sseSource) sseSource.close();
-
   sseSource = new EventSource(url);
   const statusEl = document.getElementById('conn-status');
-
   sseSource.onopen = () => {
     statusEl.textContent = '● Connected';
     statusEl.style.color = '#84BD00';
   };
-
   sseSource.onerror = () => {
     statusEl.textContent = '● Disconnected';
     statusEl.style.color = '#ef4444';
     sseSource.close();
     setTimeout(connectSSE, 4000);
   };
-
-  // Generic message handler
-  sseSource.onmessage = (e) => {
-    try { addMessage(JSON.parse(e.data)); } catch {}
-  };
-
-  // Listen for both old event-bus types and raw OCPP action names
+  sseSource.onmessage = (e) => { try { addMessage(JSON.parse(e.data)); } catch {} };
   const eventTypes = [
     'charger.boot', 'charger.online', 'charger.offline', 'charger.status', 'charger.heartbeat',
     'session.start', 'session.meter', 'session.stop', 'session.cdr',
@@ -380,13 +411,8 @@ function connectSSE() {
     'TriggerMessage', 'DataTransfer', 'FirmwareStatusNotification',
   ];
   eventTypes.forEach(type => {
-    sseSource.addEventListener(type, (e) => {
-      try { addMessage(JSON.parse(e.data)); } catch {}
-    });
+    sseSource.addEventListener(type, (e) => { try { addMessage(JSON.parse(e.data)); } catch {} });
   });
 }
 
-// ─── Boot ─────────────────────────────────────────────────────────────────────
-loadHistory().then(() => {
-  connectSSE();
-});
+loadHistory().then(() => { connectSSE(); });

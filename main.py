@@ -10,10 +10,12 @@ import os
 import logging
 
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.base import BaseHTTPMiddleware
 
-from shared import APP_TITLE
+from shared import APP_TITLE, get_current_user
 
 # Route modules
 from routes.dashboard import router as dashboard_router
@@ -33,11 +35,34 @@ from routes.ocpi_mgmt import router as ocpi_mgmt_router
 from routes.docs import router as docs_router
 from routes.network import router as network_router
 from routes.skins import router as skins_router
+from routes.auth import router as auth_router
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Paths that don't require authentication
+_PUBLIC_PREFIXES = ("/login", "/logout", "/static", "/favicon.ico")
+
+
+class AuthMiddleware(BaseHTTPMiddleware):
+    """Redirect unauthenticated requests to /login."""
+
+    async def dispatch(self, request: Request, call_next):
+        path = request.url.path
+        # Allow public paths through unconditionally
+        if any(path == p or path.startswith(p) for p in _PUBLIC_PREFIXES):
+            return await call_next(request)
+
+        user = get_current_user(request)
+        if user is None:
+            return RedirectResponse("/login", status_code=302)
+
+        request.state.user = user
+        return await call_next(request)
+
+
 app = FastAPI(title=APP_TITLE, docs_url=None, redoc_url=None)
+app.add_middleware(AuthMiddleware)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Register all route modules
@@ -58,6 +83,7 @@ app.include_router(ocpi_mgmt_router)
 app.include_router(docs_router)
 app.include_router(network_router)
 app.include_router(skins_router)
+app.include_router(auth_router)
 
 
 if __name__ == "__main__":

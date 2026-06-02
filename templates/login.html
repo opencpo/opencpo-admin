@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <title>Sign In — OpenCPO Admin</title>
+    <script src="/static/tailwind.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { dark: '#0C2340', green: '#84BD00', blue: '#00B0E4' }
+                    },
+                    fontSize: {
+                        'xs': ['13px', '18px'],
+                        'sm': ['15px', '22px'],
+                        'base': ['16px', '24px'],
+                        'lg': ['18px', '26px'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background: #050b14; }
+
+        .login-card {
+            background: #0a1221;
+            border: 1px solid #15283f;
+            border-radius: 12px;
+            box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+        }
+
+        .input-field {
+            background: #060d19;
+            border: 1px solid #1e3452;
+            border-radius: 7px;
+            color: #e8edf2;
+            font-size: 15px;
+            padding: 11px 14px;
+            width: 100%;
+            outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .input-field::placeholder { color: #3d5870; }
+        .input-field:focus {
+            border-color: #00B0E4;
+            box-shadow: 0 0 0 3px rgba(0,176,228,0.12);
+        }
+
+        .btn-login {
+            background: #00B0E4;
+            color: #fff;
+            border: none;
+            border-radius: 7px;
+            font-size: 15px;
+            font-weight: 600;
+            padding: 12px 0;
+            width: 100%;
+            cursor: pointer;
+            letter-spacing: 0.2px;
+            transition: background 0.15s, box-shadow 0.15s;
+        }
+        .btn-login:hover {
+            background: #00c4ff;
+            box-shadow: 0 4px 16px rgba(0,176,228,0.3);
+        }
+        .btn-login:active { background: #0099cc; }
+
+        label { font-size: 13px; color: #6b8299; letter-spacing: 0.3px; }
+    </style>
+</head>
+<body class="h-full flex flex-col items-center justify-center" style="min-height:100vh;">
+
+    <!-- Logo bar at top -->
+    <div style="margin-bottom:36px;text-align:center;">
+        <div style="font-size:32px;font-weight:700;letter-spacing:-0.5px;line-height:1;">
+            <span style="color:#e8edf2;">Open</span><span style="color:#4a6580;">CPO</span>
+        </div>
+        <div style="font-size:10px;color:#3d5870;letter-spacing:2.5px;text-transform:uppercase;margin-top:8px;">
+            Admin Panel
+        </div>
+    </div>
+
+    <!-- Login card -->
+    <div class="login-card" style="width:100%;max-width:380px;padding:36px 32px;">
+
+        <h1 style="font-size:17px;font-weight:600;color:#e8edf2;margin-bottom:6px;">Sign in</h1>
+        <p style="font-size:13px;color:#3d5870;margin-bottom:28px;">Use your demo invitation credentials</p>
+
+        <!-- Error message -->
+        {% if error %}
+        <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:7px;padding:10px 14px;margin-bottom:20px;font-size:13px;color:#f87171;">
+            {{ error }}
+        </div>
+        {% endif %}
+
+        <form method="post" action="/login" autocomplete="on">
+            <div style="margin-bottom:18px;">
+                <label for="username" style="display:block;margin-bottom:6px;">Username</label>
+                <input
+                    id="username"
+                    name="username"
+                    type="text"
+                    class="input-field"
+                    placeholder="your-username"
+                    autocomplete="username"
+                    required
+                    autofocus
+                >
+            </div>
+
+            <div style="margin-bottom:28px;">
+                <label for="password" style="display:block;margin-bottom:6px;">Password</label>
+                <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    class="input-field"
+                    placeholder="••••••••"
+                    autocomplete="current-password"
+                    required
+                >
+            </div>
+
+            <button type="submit" class="btn-login">Sign in</button>
+        </form>
+    </div>
+
+    <!-- Footer -->
+    <div style="margin-top:32px;font-size:12px;color:#2d4a63;text-align:center;">
+        Powered by <span style="color:#3d5870;">Stroomlijnen B.V.</span>
+    </div>
+
+</body>
+</html>
