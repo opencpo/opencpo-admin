@@ -15,7 +15,11 @@ logger = logging.getLogger(__name__)
 
 # OCPP Core API
 CORE_API = os.getenv("OCPP_CORE_API_URL", os.getenv("OCPP_CORE_API", "http://localhost:8000"))
+CORE_API_KEY = os.getenv("CORE_API_KEY", "")
 APP_TITLE = os.getenv("APP_TITLE", "OpenCPO Admin")
+
+# PKI data directory (shared volume with ocpp-core)
+PKI_DATA_DIR = os.getenv("PKI_DATA_DIR", "/app/data/pki")
 
 # Templates (shared instance)
 templates = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "templates"))
