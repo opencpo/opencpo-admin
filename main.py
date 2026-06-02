@@ -37,6 +37,7 @@ from routes.network import router as network_router
 from routes.skins import router as skins_router
 from routes.auth import router as auth_router
 from routes.setup import router as setup_router
+from routes.updates import router as updates_router
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -113,6 +114,7 @@ app.include_router(network_router)
 app.include_router(skins_router)
 app.include_router(auth_router)
 app.include_router(setup_router)
+app.include_router(updates_router)
 
 
 # ── Health Endpoint ──────────────────────────────────────────────────────────

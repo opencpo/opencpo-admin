@@ -428,6 +428,22 @@
         </form>
     </div>
 
+    <!-- ── Platform Update ────────────────────────────────────────────── -->
+    <div class="bg-gray-900 rounded-lg border border-gray-800" id="platform-update">
+        <div class="p-4 border-b border-gray-800 flex items-center justify-between">
+            <div>
+                <h2 class="text-base font-semibold">⬆ Platform Update</h2>
+                <p class="text-xs text-gray-500 mt-0.5">
+                    Check for new OpenCPO releases and update with one click.
+                    Your data and configuration are preserved.
+                </p>
+            </div>
+        </div>
+        <div hx-get="/partials/update-status" hx-trigger="load" hx-swap="innerHTML">
+            <div class="p-4 text-sm text-gray-500">Checking for updates...</div>
+        </div>
+    </div>
+
 </div><!-- /max-w-3xl -->
 
 <script>
