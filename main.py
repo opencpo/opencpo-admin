@@ -117,6 +117,26 @@ app.include_router(auth_router)
 app.include_router(setup_router)
 
 
+# ── Health Endpoint ──────────────────────────────────────────────────────────
+@app.get("/health")
+async def health():
+    """Liveness check — verifies the service is running and core API is reachable."""
+    from shared import CORE_API
+    import httpx
+    core_ok = False
+    try:
+        async with httpx.AsyncClient(timeout=3) as client:
+            r = await client.get(f"{CORE_API}/health")
+            core_ok = r.status_code == 200
+    except Exception:
+        pass
+    return {
+        "status": "ok" if core_ok else "starting",
+        "service": "cpo-admin",
+        "core_api": "reachable" if core_ok else "waiting",
+    }
+
+
 if __name__ == "__main__":
     host = os.getenv("HOST", "127.0.0.1")
     port = int(os.getenv("PORT", "8080"))
