@@ -38,7 +38,7 @@ templates.env.globals["compliance_url"] = COMPLIANCE_URL
 templates.env.globals["core_api_public_url"] = CORE_API_PUBLIC_URL
 
 # ── Local JWT verification (avoids calling core /me on every request) ─────
-_JWT_SECRET = os.getenv("JWT_SECRET", os.getenv("CORE_API_KEY", "opencpo-admin-jwt-secret"))
+_JWT_SECRET = os.getenv("JWT_SECRET", os.getenv("CORE_API_KEY", ""))
 _JWT_ALGO = "HS256"
 
 

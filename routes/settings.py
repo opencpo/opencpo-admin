@@ -20,7 +20,7 @@ async def settings_page(request: Request):
         logger.warning("Failed to load settings from Core: %s", exc)
         data = {}
 
-    sms  = data.get("sms",  {"provider": "demo"})
+    sms  = data.get("sms",  {"provider": ""})
     smtp = data.get("smtp", {"port": 587, "tls": True})
     otp  = data.get("otp",  {"enabled": True, "demo_mode": False, "code_length": 6, "ttl_seconds": 300})
     ocpi = data.get("ocpi", {
@@ -49,7 +49,7 @@ async def action_save_sms(request: Request):
     """Save SMS provider settings via Core API."""
     form = await request.form()
     body = {
-        "provider":     form.get("provider", "demo"),
+        "provider":     form.get("provider", ""),
         "api_key":      form.get("api_key", ""),
         "workspace_id": form.get("workspace_id", ""),
         "channel_id":   form.get("channel_id", ""),

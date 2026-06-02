@@ -31,12 +31,12 @@ async def network_page(request: Request):
     try:
         nodes_data = await api("/network/nodes")
         nodes     = nodes_data.get("nodes", [])
-        demo_mode = nodes_data.get("demo_mode", True)
+        demo_mode = nodes_data.get("demo_mode", False)
         demo_msg  = nodes_data.get("message", "")
     except Exception as exc:
         logger.warning("Failed to fetch network nodes: %s", exc)
         nodes     = []
-        demo_mode = True
+        demo_mode = False
         demo_msg  = "Could not reach Core API."
 
     return templates.TemplateResponse(request, "network.html", {
