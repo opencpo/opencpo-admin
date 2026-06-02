@@ -87,8 +87,7 @@
     <!-- Login card -->
     <div class="login-card" style="width:100%;max-width:380px;padding:36px 32px;">
 
-        <h1 style="font-size:17px;font-weight:600;color:#e8edf2;margin-bottom:6px;">Sign in</h1>
-        <p style="font-size:13px;color:#3d5870;margin-bottom:28px;">Demo: <strong style="color:#84BD00;">admin</strong> / <strong style="color:#84BD00;">cpoadmin</strong></p>
+        <h1 style="font-size:17px;font-weight:600;color:#e8edf2;margin-bottom:24px;">Sign in</h1>
 
         <!-- Error message -->
         {% if error %}
@@ -99,14 +98,14 @@
 
         <form method="post" action="/login" autocomplete="on">
             <div style="margin-bottom:18px;">
-                <label for="username" style="display:block;margin-bottom:6px;">Username</label>
+                <label for="email" style="display:block;margin-bottom:6px;">Email</label>
                 <input
-                    id="username"
-                    name="username"
-                    type="text"
+                    id="email"
+                    name="email"
+                    type="email"
                     class="input-field"
-                    placeholder="your-username"
-                    autocomplete="username"
+                    placeholder="you@example.com"
+                    autocomplete="email"
                     required
                     autofocus
                 >
@@ -119,7 +118,7 @@
                     name="password"
                     type="password"
                     class="input-field"
-                    placeholder="••••••••"
+                    placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;"
                     autocomplete="current-password"
                     required
                 >

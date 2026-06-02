@@ -15,7 +15,7 @@ from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from shared import APP_TITLE, get_current_user
+from shared import APP_TITLE, verify_session, get_setup_status
 
 # Route modules
 from routes.dashboard import router as dashboard_router
@@ -36,16 +36,18 @@ from routes.docs import router as docs_router
 from routes.network import router as network_router
 from routes.skins import router as skins_router
 from routes.auth import router as auth_router
+from routes.setup import router as setup_router
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Paths that don't require authentication
-_PUBLIC_PREFIXES = ("/login", "/logout", "/static", "/favicon.ico")
+_PUBLIC_PREFIXES = ("/login", "/logout", "/setup", "/static", "/favicon.ico")
 
 
 class AuthMiddleware(BaseHTTPMiddleware):
-    """Redirect unauthenticated requests to /login."""
+    """Authenticate requests. Redirects unauthenticated users to setup wizard
+    if the platform hasn't been configured yet, or to login otherwise."""
 
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
@@ -53,7 +55,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
         if any(path == p or path.startswith(p) for p in _PUBLIC_PREFIXES):
             return await call_next(request)
 
-        user = get_current_user(request)
+        user = await verify_session(request)
         if user is None:
             return RedirectResponse("/login", status_code=302)
 
@@ -61,7 +63,35 @@ class AuthMiddleware(BaseHTTPMiddleware):
         return await call_next(request)
 
 
+class SetupCheckMiddleware(BaseHTTPMiddleware):
+    """Check if platform setup is complete. Redirect to /setup if not."""
+
+    async def dispatch(self, request: Request, call_next):
+        path = request.url.path
+        # Skip for static files, setup routes, login
+        if any(path == p or path.startswith(p) for p in _PUBLIC_PREFIXES):
+            return await call_next(request)
+
+        # Only check for authenticated requests (AuthMiddleware handles unauthenticated)
+        user = await verify_session(request)
+        if user is None:
+            return await call_next(request)
+
+        # Check setup status
+        try:
+            status = await get_setup_status()
+            if not status.get("complete", False):
+                # Redirect to setup wizard
+                return RedirectResponse("/setup", status_code=302)
+        except Exception:
+            # If core is unreachable, let the request through
+            pass
+
+        return await call_next(request)
+
+
 app = FastAPI(title=APP_TITLE, docs_url=None, redoc_url=None)
+app.add_middleware(SetupCheckMiddleware)
 app.add_middleware(AuthMiddleware)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -84,6 +114,7 @@ app.include_router(docs_router)
 app.include_router(network_router)
 app.include_router(skins_router)
 app.include_router(auth_router)
+app.include_router(setup_router)
 
 
 if __name__ == "__main__":

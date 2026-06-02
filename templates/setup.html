@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <title>Setup — OpenCPO Admin</title>
+    <script src="/static/tailwind.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { dark: '#0C2340', green: '#84BD00', blue: '#00B0E4' }
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background: #050b14; }
+        .setup-card {
+            background: #0a1221;
+            border: 1px solid #15283f;
+            border-radius: 12px;
+            box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+        }
+        .step-indicator { color: #3d5870; font-size: 13px; }
+        .step-indicator .active { color: #00B0E4; font-weight: 600; }
+        .step-indicator .done { color: #84BD00; }
+        .input-field {
+            background: #060d19;
+            border: 1px solid #1e3452;
+            border-radius: 7px;
+            color: #e8edf2;
+            font-size: 15px;
+            padding: 11px 14px;
+            width: 100%;
+            outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .input-field::placeholder { color: #3d5870; }
+        .input-field:focus {
+            border-color: #00B0E4;
+            box-shadow: 0 0 0 3px rgba(0,176,228,0.12);
+        }
+        .btn-primary {
+            background: #00B0E4;
+            color: #fff;
+            border: none;
+            border-radius: 7px;
+            font-size: 15px;
+            font-weight: 600;
+            padding: 12px 24px;
+            cursor: pointer;
+            transition: background 0.15s, box-shadow 0.15s;
+        }
+        .btn-primary:hover { background: #00c4ff; box-shadow: 0 4px 16px rgba(0,176,228,0.3); }
+        .btn-skip {
+            background: transparent;
+            color: #3d5870;
+            border: 1px solid #1e3452;
+            border-radius: 7px;
+            font-size: 13px;
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .btn-skip:hover { color: #6b8299; border-color: #2d4a63; }
+        .checkbox-label { font-size: 14px; color: #b0c4d8; cursor: pointer; }
+        label { font-size: 13px; color: #6b8299; letter-spacing: 0.3px; display: block; margin-bottom: 6px; }
+        select.input-field { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%233d5870' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+    </style>
+</head>
+<body class="h-full flex flex-col items-center justify-center" style="min-height:100vh;">
+
+    <div style="max-width:540px;width:100%;padding:0 20px;">
+
+        <!-- Logo -->
+        <div style="text-align:center;margin-bottom:28px;">
+            <div style="font-size:28px;font-weight:700;letter-spacing:-0.5px;">
+                <span style="color:#e8edf2;">Open</span><span style="color:#4a6580;">CPO</span>
+            </div>
+            <div style="font-size:10px;color:#3d5870;letter-spacing:2.5px;text-transform:uppercase;margin-top:6px;">
+                Setup Wizard
+            </div>
+        </div>
+
+        <!-- Error banner -->
+        {% if error %}
+        <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:7px;padding:10px 14px;margin-bottom:20px;font-size:13px;color:#f87171;">
+            {{ error }}
+        </div>
+        {% endif %}
+
+        <!-- Step indicator -->
+        <div class="step-indicator" style="display:flex;gap:4px;justify-content:center;margin-bottom:24px;flex-wrap:wrap;">
+            {% for s in steps %}
+            {% set state = steps_state.get(s, 'pending') %}
+            <span style="display:flex;align-items:center;gap:4px;{% if state == 'done' %}color:#84BD00;{% elif state == 'skipped' %}color:#6b8299;{% elif s == current_step %}color:#00B0E4;font-weight:600;{% endif %}">
+                {% if state == 'done' %}✓{% elif state == 'skipped' %}—{% else %}{{ loop.index }}{% endif %}
+                <span style="display:none;">{{ step_labels[s] }}</span>
+            </span>
+            {% if not loop.last %}<span style="color:#1e3452;">·</span>{% endif %}
+            {% endfor %}
+        </div>
+
+        <!-- Current step -->
+        <div id="setup-step">
+            {% include '_setup_step.html' %}
+        </div>
+
+    </div>
+
+    <script>
+        // HTMX will swap #setup-step content
+        document.body.addEventListener('htmx:afterSwap', function(evt) {
+            if (evt.detail.target.id === 'setup-step') {
+                // Focus first input in the new step
+                const firstInput = document.querySelector('#setup-step input');
+                if (firstInput) firstInput.focus();
+            }
+        });
+    </script>
+</body>
+</html>

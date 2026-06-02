@@ -1,0 +1,164 @@
+<!-- Step: {{ step }} -->
+<div class="setup-card" style="padding:32px;">
+
+    <div style="font-size:13px;color:#84BD00;margin-bottom:4px;">{{ step_icons[step] }} Step {{ loop.index if step in steps else '' }}</div>
+    <h2 style="font-size:20px;font-weight:600;color:#e8edf2;margin-bottom:6px;">{{ step_labels[step] }}</h2>
+    <p style="font-size:13px;color:#3d5870;margin-bottom:24px;">{{ step_descriptions[step] }}</p>
+
+    {% if error %}
+    <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:7px;padding:10px 14px;margin-bottom:20px;font-size:13px;color:#f87171;">
+        {{ error }}
+    </div>
+    {% endif %}
+
+    <form hx-post="/setup/step/{{ step }}" hx-target="#setup-step" hx-swap="innerHTML"
+          style="display:flex;flex-direction:column;gap:16px;">
+
+        {% if step == "admin" %}
+        <div>
+            <label for="name">Name</label>
+            <input id="name" name="name" type="text" class="input-field" value="Admin" placeholder="Admin" required>
+        </div>
+        <div>
+            <label for="email">Email</label>
+            <input id="email" name="email" type="email" class="input-field" placeholder="admin@example.com" required>
+        </div>
+        <div>
+            <label for="password">Password (min 8 characters)</label>
+            <input id="password" name="password" type="password" class="input-field" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" minlength="8" required>
+        </div>
+
+        {% elif step == "org" %}
+        <div>
+            <label for="name">Organization Name</label>
+            <input id="name" name="name" type="text" class="input-field" value="My CPO" placeholder="My CPO">
+        </div>
+        <div>
+            <label for="timezone">Timezone</label>
+            <select id="timezone" name="timezone" class="input-field">
+                <option value="Europe/Amsterdam">Europe/Amsterdam (CET)</option>
+                <option value="Europe/London">Europe/London (GMT)</option>
+                <option value="Europe/Berlin">Europe/Berlin (CET)</option>
+                <option value="America/New_York">America/New York (EST)</option>
+                <option value="America/Chicago">America/Chicago (CST)</option>
+                <option value="America/Denver">America/Denver (MST)</option>
+                <option value="America/Los_Angeles">America/Los Angeles (PST)</option>
+                <option value="Asia/Shanghai">Asia/Shanghai (CST)</option>
+                <option value="Asia/Tokyo">Asia/Tokyo (JST)</option>
+                <option value="UTC">UTC</option>
+            </select>
+        </div>
+        <div>
+            <label for="currency">Currency</label>
+            <select id="currency" name="currency" class="input-field">
+                <option value="EUR">EUR (€)</option>
+                <option value="USD">USD ($)</option>
+                <option value="GBP">GBP (£)</option>
+                <option value="CHF">CHF</option>
+                <option value="NOK">NOK</option>
+            </select>
+        </div>
+        <div>
+            <label for="public_url">Public URL</label>
+            <input id="public_url" name="public_url" type="url" class="input-field" value="http://localhost" placeholder="https://cpo.example.com">
+        </div>
+
+        {% elif step == "smtp" %}
+        <div style="font-size:12px;color:#3d5870;margin-bottom:4px;">Leave empty to skip — can be configured later.</div>
+        <div>
+            <label for="host">SMTP Host</label>
+            <input id="host" name="host" type="text" class="input-field" placeholder="smtp.example.com">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div>
+                <label for="port">Port</label>
+                <input id="port" name="port" type="number" class="input-field" value="587">
+            </div>
+            <div>
+                <label for="from_email">From Email</label>
+                <input id="from_email" name="from_email" type="email" class="input-field" placeholder="noreply@example.com">
+            </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div>
+                <label for="username">Username</label>
+                <input id="username" name="username" type="text" class="input-field" placeholder="user@example.com">
+            </div>
+            <div>
+                <label for="smtp_password">Password</label>
+                <input id="smtp_password" name="password" type="password" class="input-field" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;">
+            </div>
+        </div>
+        <div>
+            <label class="checkbox-label">
+                <input type="checkbox" name="use_tls" checked style="margin-right:6px;"> Use TLS
+            </label>
+        </div>
+
+        {% elif step == "pki" %}
+        <div style="font-size:12px;color:#3d5870;margin-bottom:4px;">PKI is initialized automatically on startup. This step ensures root and user CAs exist.</div>
+        <div>
+            <label for="org_name">Organization Name (for certificates)</label>
+            <input id="org_name" name="org_name" type="text" class="input-field" value="" placeholder="My CPO">
+        </div>
+        <div>
+            <label for="country">Country</label>
+            <select id="country" name="country" class="input-field">
+                <option value="NL">Netherlands</option>
+                <option value="DE">Germany</option>
+                <option value="UK">United Kingdom</option>
+                <option value="US">United States</option>
+                <option value="BE">Belgium</option>
+                <option value="FR">France</option>
+                <option value="CH">Switzerland</option>
+            </select>
+        </div>
+
+        {% elif step == "pricing" %}
+        <div>
+            <label for="currency">Currency</label>
+            <select id="currency" name="currency" class="input-field">
+                <option value="EUR">EUR (€)</option>
+                <option value="USD">USD ($)</option>
+                <option value="GBP">GBP (£)</option>
+            </select>
+        </div>
+        <div>
+            <label for="default_rate_kwh">Default rate (€/kWh)</label>
+            <input id="default_rate_kwh" name="default_rate_kwh" type="number" step="0.01" class="input-field" value="0.35">
+        </div>
+        <div>
+            <label for="tariff_name">Tariff name</label>
+            <input id="tariff_name" name="tariff_name" type="text" class="input-field" value="Standard Rate">
+        </div>
+
+        {% elif step == "features" %}
+        <div style="font-size:12px;color:#3d5870;margin-bottom:4px;">Enable optional modules. All can be toggled later.</div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+            <label class="checkbox-label">
+                <input type="checkbox" name="ocpi" style="margin-right:8px;"> OCPI Roaming — connect to other charging networks
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" name="billing" style="margin-right:8px;"> Billing & Invoicing — generate invoices for fleet clients
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" name="ems" style="margin-right:8px;"> EMS — energy management system integration
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" name="iso15118" style="margin-right:8px;"> ISO 15118 — Plug & Charge support
+            </label>
+        </div>
+        {% endif %}
+
+        <div style="display:flex;gap:12px;margin-top:8px;">
+            <button type="submit" class="btn-primary">
+                {% if step == "features" %}Finish Setup{% else %}Continue →{% endif %}
+            </button>
+            <button type="button" class="btn-skip"
+                    hx-post="/setup/skip/{{ step }}" hx-target="#setup-step" hx-swap="innerHTML">
+                Skip — I'll configure manually
+            </button>
+        </div>
+    </form>
+
+</div>
