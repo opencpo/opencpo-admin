@@ -1,0 +1,106 @@
+<!-- Enhanced Update Panel — served by /partials/update-status -->
+<div class="space-y-4">
+
+    <!-- Version Comparison Card -->
+    <div class="bg-gray-900/50 border border-gray-800 rounded-lg p-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-6">
+                <!-- Current version -->
+                <div class="text-center">
+                    <div class="text-xs text-gray-500 uppercase tracking-wider mb-1">Current</div>
+                    <div class="text-lg font-mono font-bold {% if needs_update %}text-gray-400{% else %}text-green-400{% endif %}">
+                        v{{ current }}
+                    </div>
+                </div>
+                <!-- Arrow / status -->
+                <div class="flex flex-col items-center">
+                    {% if needs_update %}
+                    <span class="text-yellow-400 text-xl">→</span>
+                    <span class="text-xs text-yellow-500 mt-1">Update available</span>
+                    {% else %}
+                    <span class="text-green-500 text-xl">✓</span>
+                    <span class="text-xs text-green-500 mt-1">Up to date</span>
+                    {% endif %}
+                </div>
+                <!-- Latest version -->
+                {% if latest and latest != current %}
+                <div class="text-center">
+                    <div class="text-xs text-gray-500 uppercase tracking-wider mb-1">Latest</div>
+                    <div class="text-lg font-mono font-bold text-yellow-300">v{{ latest }}</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Action buttons -->
+    {% if needs_update %}
+    <div class="flex items-center gap-3 flex-wrap">
+        <button hx-post="/action/update/run"
+                hx-target="#update-result-panel"
+                hx-swap="innerHTML"
+                hx-confirm="Update to v{{ latest }}? The platform will restart. Continue?"
+                hx-indicator="#update-run-spinner"
+                class="px-5 py-2 bg-yellow-700 hover:bg-yellow-600 text-white font-bold rounded-lg text-sm transition-colors">
+            ⬆ Update Now
+        </button>
+
+        <select onchange="postponeUpdatePanel(this)"
+                class="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-xs text-gray-300">
+            <option value="">Remind Later...</option>
+            <option value="1">In 1 hour</option>
+            <option value="24" selected>In 24 hours</option>
+            <option value="168">In 7 days</option>
+        </select>
+
+        <span id="update-run-spinner" class="htmx-indicator text-sm text-yellow-400">
+            <span class="inline-block animate-pulse">⟳</span> Updating...
+        </span>
+    </div>
+    <div id="update-result-panel" class="mt-2"></div>
+    {% else %}
+    <div class="flex items-center gap-3">
+        <button hx-post="/action/update/check"
+                hx-target="#update-result-panel"
+                hx-swap="innerHTML"
+                class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs text-gray-200 transition-colors">
+            🔄 Check for updates
+        </button>
+        <div id="update-result-panel"></div>
+    </div>
+    {% endif %}
+
+    <!-- Changelog (expandable) -->
+    {% if changelog %}
+    <details class="bg-gray-900/30 border border-gray-800 rounded-lg">
+        <summary class="px-4 py-3 text-sm text-gray-300 cursor-pointer hover:text-gray-200 font-medium select-none">
+            📋 Changelog — v{{ latest }}
+        </summary>
+        <div class="px-4 pb-4 text-xs text-gray-400 leading-relaxed whitespace-pre-wrap font-mono">
+            {{ changelog }}
+        </div>
+    </details>
+    {% endif %}
+
+    <!-- Update History Table -->
+    <div class="border-t border-gray-800 pt-4 mt-2">
+        <h3 class="text-sm font-semibold text-gray-300 mb-3">📜 Activity History</h3>
+        <div hx-get="/partials/update-history"
+             hx-trigger="load"
+             hx-swap="innerHTML">
+            <div class="text-xs text-gray-500 py-2">Loading history...</div>
+        </div>
+    </div>
+</div>
+
+<script>
+function postponeUpdatePanel(sel) {
+    var hours = sel.value;
+    if (!hours) return;
+    htmx.ajax('POST', '/action/update/postpone', {
+        target: '#platform-update',
+        swap: 'innerHTML',
+        values: {hours: hours}
+    });
+}
+</script>

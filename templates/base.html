@@ -43,6 +43,13 @@
 </head>
 <body class="h-full bg-gray-950 text-gray-100" style="font-size:15px;">
 
+<!-- Update Banner — auto-loaded via HTMX on every page -->
+<div id="update-banner"
+     hx-get="/partials/update-banner"
+     hx-trigger="load delay:2s"
+     hx-swap="outerHTML">
+</div>
+
 <!-- Top Nav — platform-level navigation between apps -->
 <nav style="display:flex;align-items:center;gap:2px;padding:8px 16px;background:#050b14;border-bottom:1px solid #15283f;font-size:13px;position:sticky;top:0;z-index:9999;">
   <span style="color:#e8edf2;font-weight:600;font-size:14px;margin-right:20px;letter-spacing:-0.3px;">Open<span style="color:#4a6580;">CPO</span></span>

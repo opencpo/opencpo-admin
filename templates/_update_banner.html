@@ -1,0 +1,38 @@
+<!-- Update Banner Partial — served by /partials/update-banner, loaded on every page -->
+{% if needs_update %}
+<div id="update-banner"
+     class="flex items-center justify-between px-6 py-3 bg-yellow-900/40 border-b border-yellow-800/60 text-yellow-200"
+     style="font-size:14px;">
+    <div class="flex items-center gap-3">
+        <span style="font-size:20px;line-height:1;">⬆</span>
+        <div>
+            <span class="font-semibold">Update v{{ latest }} available</span>
+            <span class="text-yellow-400/60 mx-2">·</span>
+            <span class="text-yellow-300/70 text-xs">You are running v{{ current }}</span>
+        </div>
+    </div>
+    <div class="flex items-center gap-2">
+        <button hx-post="/action/update/run"
+                hx-target="#update-banner"
+                hx-swap="outerHTML"
+                hx-confirm="Update to v{{ latest }}? The platform will restart. Continue?"
+                class="px-4 py-1.5 bg-yellow-700 hover:bg-yellow-600 text-white font-semibold rounded-lg text-xs transition-colors whitespace-nowrap">
+            ⬆ Update Now
+        </button>
+        <button hx-post="/action/update/postpone"
+                hx-target="#update-banner"
+                hx-swap="outerHTML"
+                hx-vals='{"hours": "24"}'
+                class="px-3 py-1.5 bg-yellow-800/50 hover:bg-yellow-800/70 text-yellow-300 rounded-lg text-xs transition-colors whitespace-nowrap">
+            Remind Later
+        </button>
+        <button hx-post="/action/update/postpone"
+                hx-target="#update-banner"
+                hx-swap="outerHTML"
+                hx-vals='{"hours": "24"}'
+                class="ml-1 text-yellow-400/50 hover:text-yellow-300 transition-colors"
+                title="Dismiss for 24h"
+                style="font-size:20px;line-height:1;">&times;</button>
+    </div>
+</div>
+{% endif %}

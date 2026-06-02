@@ -428,6 +428,24 @@
         </form>
     </div>
 
+    <!-- ── Backup & Restore ─────────────────────────────────────────── -->
+    <div class="bg-gray-900 rounded-lg border border-gray-800" id="backup-panel">
+        <div class="p-4 border-b border-gray-800 flex items-center justify-between">
+            <div>
+                <h2 class="text-base font-semibold">💾 Backup & Restore</h2>
+                <p class="text-xs text-gray-500 mt-0.5">
+                    Create backups of your platform data, restore from a previous backup,
+                    or import an external backup file.
+                </p>
+            </div>
+        </div>
+        <div class="p-4">
+            <div hx-get="/partials/backup-panel" hx-trigger="load" hx-swap="innerHTML">
+                <div class="text-sm text-gray-500">Loading backups...</div>
+            </div>
+        </div>
+    </div>
+
     <!-- ── Platform Update ────────────────────────────────────────────── -->
     <div class="bg-gray-900 rounded-lg border border-gray-800" id="platform-update">
         <div class="p-4 border-b border-gray-800 flex items-center justify-between">
@@ -439,7 +457,7 @@
                 </p>
             </div>
         </div>
-        <div hx-get="/partials/update-status" hx-trigger="load" hx-swap="innerHTML">
+        <div id="update-status-container" hx-get="/partials/update-status" hx-trigger="load" hx-swap="innerHTML">
             <div class="p-4 text-sm text-gray-500">Checking for updates...</div>
         </div>
     </div>
